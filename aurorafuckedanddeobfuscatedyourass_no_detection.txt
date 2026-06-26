@@ -4721,7 +4721,7 @@ LocalPlayer.CharacterAdded:Connect(function(char)
     end
 end)
 
-local no_render_module = MiscTab:create_module({
+local no_render_module = SettingTab:create_module({
     title = "No Render",
     description = "Disables rendering of effects",
     flag = "NoRenderModule",
