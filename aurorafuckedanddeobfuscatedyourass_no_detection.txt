@@ -2913,7 +2913,7 @@ library:load()
 
 -- Create tabs
 local AutoparryTab = library:create_tab("Main", "rbxassetid://76499042599127")
-local MiscTab = library:create_tab("Misc", "rbxassetid://126017907477623")
+local SettingTab = library:create_tab("Setting", "rbxassetid://6031280882")
 
 local function Notify(settings)
     Library.SendNotification({ title = settings.Title or settings.title, text = settings.Content or settings.text or settings.Content, duration = settings.Duration or settings.duration or 3 })
@@ -4719,63 +4719,6 @@ LocalPlayer.CharacterAdded:Connect(function(char)
         Byte_Library.Headless(char)
         Byte_Library.Korblox(char)
     end
-end)
-
--- Headless & Korblox module in Misc
-local headless_module = MiscTab:create_module({
-    title = "Cosmetics",
-    description = "Apply Headless and Korblox",
-    flag = "HeadlessKorbloxModule",
-    section = "left",
-    callback = function(state)
-        getgenv().HeadlessKorbloxEnabled = state
-        local char = LocalPlayer.Character
-        if char then
-            if state then
-                pcall(function() Byte_Library.Headless(char); Byte_Library.Korblox(char) end)
-            else
-                pcall(function() Byte_Library.Restore_Head(char); Byte_Library.Restore_Leg(char) end)
-            end
-        end
-        if state then
-            if not headlessKorblox_conn then
-                headlessKorblox_conn = LocalPlayer.CharacterAdded:Connect(function(char)
-                    task.wait(0.5)
-                    if getgenv().HeadlessKorbloxEnabled then
-                        pcall(function() Byte_Library.Headless(char); Byte_Library.Korblox(char) end)
-                    end
-                end)
-            end
-        else
-            if headlessKorblox_conn then
-                headlessKorblox_conn:Disconnect()
-                headlessKorblox_conn = nil
-            end
-        end
-    end
-})
-
--- Create module in Misc tab
-local ability_esp_module = MiscTab:create_module({
-    title = "Ability ESP",
-    description = "Displays equipped abilities over players",
-    flag = "AbilityESPModule",
-    section = "left",
-    callback = function(state)
-        getgenv().AbilityESP = state
-        for _, l in pairs(billboardLabels) do if l then l.Visible = state end end
-    end
-})
-
--- Hook existing players and new players
-for _, p in pairs(Players:GetPlayers()) do
-    if p ~= LocalPlayer then
-        p.CharacterAdded:Connect(function() createBillboardGui(p) end)
-        if p.Character then createBillboardGui(p) end
-    end
-end
-Players.PlayerAdded:Connect(function(p)
-    p.CharacterAdded:Connect(function() createBillboardGui(p) end)
 end)
 
 local no_render_module = MiscTab:create_module({
