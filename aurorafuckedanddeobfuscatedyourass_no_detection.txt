@@ -4725,7 +4725,7 @@ local no_render_module = SettingTab:create_module({
     title = "No Render",
     description = "Disables rendering of effects",
     flag = "NoRenderModule",
-    section = "right",
+    section = "left",
     callback = function(state)
         local effectScripts = nil
         pcall(function()
