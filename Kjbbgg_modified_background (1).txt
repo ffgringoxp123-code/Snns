@@ -4660,7 +4660,7 @@ local sword_changer_module = AvatarTab:create_module({
     end
 })
 
-avatar_module:create_checkbox({
+sword_changer:create_checkbox({
     title = "Change Sword Model",
     flag = "changeSwordModel",
     callback = function(val)
@@ -4671,7 +4671,7 @@ avatar_module:create_checkbox({
     end
 })
 
-avatar_module:create_textbox({
+sword_changer:create_textbox({
     title = "Sword Model Name",
     placeholder = "e.g. Yin Yang Greatsword",
     flag = "swordModel",
