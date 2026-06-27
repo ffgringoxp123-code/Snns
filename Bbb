@@ -22,18 +22,18 @@ local StatusLabel = Instance.new("TextLabel")
 ScreenGui.Name = "SakuraGUI"
 ScreenGui.Parent = game:GetService("CoreGui")
 
--- Main Frame
+-- Main Frame (thu nhỏ lại)
 MainFrame.Name = "MainFrame"
 MainFrame.Parent = ScreenGui
 MainFrame.BackgroundColor3 = Color3.fromRGB(25, 20, 40)
 MainFrame.BorderSizePixel = 0
-MainFrame.Size = UDim2.new(0, 440, 0, 270)
-MainFrame.Position = UDim2.new(0.5, -220, 0.5, -135)
+MainFrame.Size = UDim2.new(0, 360, 0, 200)
+MainFrame.Position = UDim2.new(0.5, -180, 0.5, -100)
 MainFrame.Active = true
 MainFrame.Draggable = true
 
 -- Bo góc
-UICorner.CornerRadius = UDim.new(0, 16)
+UICorner.CornerRadius = UDim.new(0, 14)
 UICorner.Parent = MainFrame
 
 -- Viền sáng
@@ -47,119 +47,117 @@ Stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 Title.Name = "Title"
 Title.Parent = MainFrame
 Title.BackgroundTransparency = 1
-Title.Size = UDim2.new(1, 0, 0, 40)
-Title.Position = UDim2.new(0, 0, 0, 8)
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.Position = UDim2.new(0, 0, 0, 6)
 Title.Text = "🌸 Sakura"
 Title.TextColor3 = Color3.fromRGB(255, 180, 220)
-Title.TextSize = 28
+Title.TextSize = 22
 Title.Font = Enum.Font.GothamBold
 Title.TextScaled = true
 
--- ========== CỘT TRÁI: FREE CAM ==========
-Question1.Name = "Question1"
-Question1.Parent = MainFrame
-Question1.BackgroundTransparency = 1
-Question1.Size = UDim2.new(0, 190, 0, 25)
-Question1.Position = UDim2.new(0, 15, 0, 58)
-Question1.Text = "Do you want free cam?"
-Question1.TextColor3 = Color3.fromRGB(220, 220, 255)
-Question1.TextSize = 14
-Question1.Font = Enum.Font.GothamSemibold
-Question1.TextXAlignment = Enum.TextXAlignment.Left
-Question1.TextWrapped = true
-
--- Hàm tạo nút
+-- ===================== HÀM TẠO NÚT =====================
 local function createButton(parent, name, text, posX, posY, color)
     local btn = Instance.new("TextButton")
     btn.Name = name
     btn.Parent = parent
     btn.BackgroundColor3 = color
     btn.BorderSizePixel = 0
-    btn.Size = UDim2.new(0, 55, 0, 25)
+    btn.Size = UDim2.new(0, 48, 0, 22)
     btn.Position = UDim2.new(0, posX, 0, posY)
     btn.Text = text
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    btn.TextSize = 13
+    btn.TextSize = 12
     btn.Font = Enum.Font.GothamSemibold
     local c = Instance.new("UICorner")
-    c.CornerRadius = UDim.new(0, 8)
+    c.CornerRadius = UDim.new(0, 7)
     c.Parent = btn
     return btn
 end
 
--- Nút cho câu hỏi 1 (Free Cam) - bên trái
-YesBtn1 = createButton(MainFrame, "YesBtn1", "Yes", 15, 88, Color3.fromRGB(60, 180, 75))
-NoBtn1  = createButton(MainFrame, "NoBtn1",  "No",  80, 88, Color3.fromRGB(200, 60, 60))
+-- ===================== CỘT TRÁI: FREE CAM =====================
+Question1.Name = "Question1"
+Question1.Parent = MainFrame
+Question1.BackgroundTransparency = 1
+Question1.Size = UDim2.new(0, 150, 0, 20)
+Question1.Position = UDim2.new(0, 44, 0, 44)
+Question1.Text = "Free cam?"
+Question1.TextColor3 = Color3.fromRGB(220, 220, 255)
+Question1.TextSize = 13
+Question1.Font = Enum.Font.GothamSemibold
+Question1.TextXAlignment = Enum.TextXAlignment.Left
+Question1.TextWrapped = true
 
--- ========== CỘT PHẢI: BLADE BALL SCRIPT (XUỐNG DÒNG) ==========
+-- Nút Yes/No cho Free Cam
+YesBtn1 = createButton(MainFrame, "YesBtn1", "Yes", 44, 68, Color3.fromRGB(60, 180, 75))
+NoBtn1  = createButton(MainFrame, "NoBtn1",  "No",  98, 68, Color3.fromRGB(200, 60, 60))
+
+-- ===================== CỘT PHẢI: BLADE BALL =====================
 Question2.Name = "Question2"
 Question2.Parent = MainFrame
 Question2.BackgroundTransparency = 1
-Question2.Size = UDim2.new(0, 220, 0, 50)
-Question2.Position = UDim2.new(0, 210, 0, 55)
-Question2.Text = "Do you want to activate\nthe Sakura script\nright now?"
+Question2.Size = UDim2.new(0, 180, 0, 20)
+Question2.Position = UDim2.new(0, 210, 0, 44)
+Question2.Text = "Blade Ball script?"
 Question2.TextColor3 = Color3.fromRGB(220, 220, 255)
 Question2.TextSize = 13
 Question2.Font = Enum.Font.GothamSemibold
 Question2.TextXAlignment = Enum.TextXAlignment.Left
-Question2.TextYAlignment = Enum.TextYAlignment.Top
 Question2.TextWrapped = true
-Question2.LineHeight = 1.2
 
--- Nút cho câu hỏi 2 (Blade Ball Script) - bên phải
-YesBtn2 = createButton(MainFrame, "YesBtn2", "Yes", 210, 112, Color3.fromRGB(60, 180, 75))
-NoBtn2  = createButton(MainFrame, "NoBtn2",  "No",  275, 112, Color3.fromRGB(200, 60, 60))
+-- Nút Yes/No cho Blade Ball
+YesBtn2 = createButton(MainFrame, "YesBtn2", "Yes", 210, 68, Color3.fromRGB(60, 180, 75))
+NoBtn2  = createButton(MainFrame, "NoBtn2",  "No",  264, 68, Color3.fromRGB(200, 60, 60))
 
--- ========== STATUS LABEL ==========
+-- ===================== STATUS LABEL =====================
 StatusLabel.Name = "StatusLabel"
 StatusLabel.Parent = MainFrame
 StatusLabel.BackgroundTransparency = 1
-StatusLabel.Size = UDim2.new(1, -30, 0, 22)
-StatusLabel.Position = UDim2.new(0, 15, 0, 155)
-StatusLabel.Text = "⚠ Answer both questions to proceed"
+StatusLabel.Size = UDim2.new(1, -20, 0, 18)
+StatusLabel.Position = UDim2.new(0, 10, 0, 100)
+StatusLabel.Text = "⚡ Pick options to continue"
 StatusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
-StatusLabel.TextSize = 12
+StatusLabel.TextSize = 11
 StatusLabel.Font = Enum.Font.Gotham
 StatusLabel.TextXAlignment = Enum.TextXAlignment.Center
 
--- ========== NÚT READY ==========
+-- ===================== NÚT READY =====================
 ReadyBtn.Name = "ReadyBtn"
 ReadyBtn.Parent = MainFrame
 ReadyBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
 ReadyBtn.BorderSizePixel = 0
-ReadyBtn.Size = UDim2.new(0, 140, 0, 36)
-ReadyBtn.Position = UDim2.new(0.5, -70, 0, 195)
+ReadyBtn.Size = UDim2.new(0, 110, 0, 30)
+ReadyBtn.Position = UDim2.new(0.5, -55, 0, 150)
 ReadyBtn.Text = "Ready"
 ReadyBtn.TextColor3 = Color3.fromRGB(160, 160, 160)
-ReadyBtn.TextSize = 16
+ReadyBtn.TextSize = 14
 ReadyBtn.Font = Enum.Font.GothamBold
 ReadyBtn.Active = false
 
-UICornerReady.CornerRadius = UDim.new(0, 12)
+UICornerReady.CornerRadius = UDim.new(0, 10)
 UICornerReady.Parent = ReadyBtn
 
--- ========== BIẾN TRẠNG THÁI ==========
+-- ===================== BIẾN TRẠNG THÁI =====================
 local answer1 = nil -- true = Yes (Free Cam), false = No
-local answer2 = nil -- true = Yes (Blade Ball Script), false = No
+local answer2 = nil -- true = Yes (Blade Ball), false = No
 
--- ========== HÀM CẬP NHẬT NÚT READY ==========
+-- ===================== CẬP NHẬT NÚT READY =====================
 local function updateReadyButton()
     if answer1 ~= nil and answer2 ~= nil then
         ReadyBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 150)
         ReadyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
         ReadyBtn.Active = true
-        StatusLabel.Text = "✅ Ready! Press to execute"
+        StatusLabel.Text = "✅ All set — press Ready!"
         StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 150)
     else
         ReadyBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
         ReadyBtn.TextColor3 = Color3.fromRGB(160, 160, 160)
         ReadyBtn.Active = false
-        StatusLabel.Text = "⚠ Answer both questions to proceed"
+        StatusLabel.Text = "⚡ Pick options to continue"
         StatusLabel.TextColor3 = Color3.fromRGB(255, 200, 100)
     end
 end
 
--- ========== HÀM HIGHLIGHT CÂU HỎI 1 ==========
+-- ===================== HIGHLIGHT CÂU HỎI 1 =====================
 local function highlightQ1(selected)
     YesBtn1.BackgroundColor3 = Color3.fromRGB(60, 180, 75)
     NoBtn1.BackgroundColor3  = Color3.fromRGB(200, 60, 60)
@@ -170,7 +168,7 @@ local function highlightQ1(selected)
     end
 end
 
--- ========== HÀM HIGHLIGHT CÂU HỎI 2 ==========
+-- ===================== HIGHLIGHT CÂU HỎI 2 =====================
 local function highlightQ2(selected)
     YesBtn2.BackgroundColor3 = Color3.fromRGB(60, 180, 75)
     NoBtn2.BackgroundColor3  = Color3.fromRGB(200, 60, 60)
@@ -181,7 +179,7 @@ local function highlightQ2(selected)
     end
 end
 
--- ========== SỰ KIỆN CHO NÚT CÂU HỎI 1 (FREE CAM) ==========
+-- ===================== SỰ KIỆN CÂU HỎI 1 =====================
 YesBtn1.MouseButton1Click:Connect(function()
     answer1 = true
     highlightQ1(true)
@@ -194,7 +192,7 @@ NoBtn1.MouseButton1Click:Connect(function()
     updateReadyButton()
 end)
 
--- ========== SỰ KIỆN CHO NÚT CÂU HỎI 2 (BLADE BALL) ==========
+-- ===================== SỰ KIỆN CÂU HỎI 2 =====================
 YesBtn2.MouseButton1Click:Connect(function()
     answer2 = true
     highlightQ2(true)
@@ -207,17 +205,13 @@ NoBtn2.MouseButton1Click:Connect(function()
     updateReadyButton()
 end)
 
--- ============================================================
---  SCRIPT FREE CAM (Link bạn cung cấp)
--- ============================================================
+-- ===================== FREE CAM =====================
 local function loadFreeCam()
     local success, err = pcall(function()
         loadstring(game:HttpGet("https://pastefy.app/6GeZY4IX/raw"))()
     end)
-    
     if not success then
-        local starterGui = game:GetService("StarterGui")
-        starterGui:SetCore("SendNotification", {
+        game:GetService("StarterGui"):SetCore("SendNotification", {
             Title = "Sakura FreeCam",
             Text = "Failed to load FreeCam: " .. tostring(err),
             Duration = 5
@@ -225,17 +219,13 @@ local function loadFreeCam()
     end
 end
 
--- ============================================================
---  SCRIPT BLADE BALL (Link bạn cung cấp)
--- ============================================================
+-- ===================== BLADE BALL =====================
 local function loadBladeBallScript()
     local success, err = pcall(function()
         loadstring(game:HttpGet("https://raw.githubusercontent.com/ffgringoxp123-code/Snns/refs/heads/main/Kjbbgg_modified_background%20(1).txt"))()
     end)
-    
     if not success then
-        local starterGui = game:GetService("StarterGui")
-        starterGui:SetCore("SendNotification", {
+        game:GetService("StarterGui"):SetCore("SendNotification", {
             Title = "Sakura Blade Ball",
             Text = "Failed to load script: " .. tostring(err),
             Duration = 5
@@ -243,32 +233,21 @@ local function loadBladeBallScript()
     end
 end
 
--- ============================================================
---  XỬ LÝ NÚT READY
--- ============================================================
+-- ===================== XỬ LÝ NÚT READY =====================
 ReadyBtn.MouseButton1Click:Connect(function()
     if not ReadyBtn.Active then return end
 
-    -- Tắt GUI
     ScreenGui:Destroy()
 
-    -- Thực thi theo lựa chọn
-    if answer1 == true then
-        loadFreeCam()
-    end
+    if answer1 == true then loadFreeCam() end
+    if answer2 == true then loadBladeBallScript() end
 
-    if answer2 == true then
-        loadBladeBallScript()
-    end
-
-    -- Thông báo kết quả
-    local starterGui = game:GetService("StarterGui")
     local msgs = {}
     if answer1 == true then table.insert(msgs, "FreeCam") end
     if answer2 == true then table.insert(msgs, "Blade Ball Script") end
 
     if #msgs > 0 then
-        starterGui:SetCore("SendNotification", {
+        game:GetService("StarterGui"):SetCore("SendNotification", {
             Title = "Sakura",
             Text = "Loaded: " .. table.concat(msgs, ", "),
             Duration = 4
