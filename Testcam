@@ -4535,6 +4535,225 @@ local no_render_module = SettingTab:create_module({
     end
 })
 
+local free_cam_module = SettingTab:create_module({
+    title = "Free cam",
+    description = "có tay không mà bật",
+    flag = "FreecamModule",
+    section = "right",
+    callback = function(state)
+        local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+
+local PlayerModule = require(player:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule"))
+local controls = PlayerModule:GetControls()
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "FreeCamGUI"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local sakuraPink = Color3.fromRGB(255, 182, 193)
+local sakuraDark = Color3.fromRGB(220, 120, 140)
+local sakuraBorder = Color3.fromRGB(255, 150, 170)
+local white = Color3.fromRGB(255, 255, 255)
+
+local frame = Instance.new("Frame")
+frame.Name = "MainFrame"
+frame.Size = UDim2.new(0, 150, 0, 100)
+frame.Position = UDim2.new(0.5, -75, 0.5, -50)
+frame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+frame.BackgroundTransparency = 1
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = true
+frame.Parent = gui
+
+local frameStroke = Instance.new("UIStroke")
+frameStroke.Color = sakuraBorder
+frameStroke.Thickness = 2.5
+frameStroke.Transparency = 0.15
+frameStroke.Parent = frame
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, 0, 0, 22)
+titleLabel.Position = UDim2.new(0, 0, 0, 2)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "🌸 Sakura"
+titleLabel.TextColor3 = sakuraPink
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.TextSize = 13
+titleLabel.TextXAlignment = Enum.TextXAlignment.Center
+titleLabel.TextYAlignment = Enum.TextYAlignment.Center
+titleLabel.Parent = frame
+
+local toggleButton = Instance.new("TextButton")
+toggleButton.Name = "ToggleButton"
+toggleButton.Size = UDim2.new(0, 130, 0, 28)
+toggleButton.Position = UDim2.new(0.5, -65, 0, 28)
+toggleButton.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
+toggleButton.Text = "Free cam"
+toggleButton.TextColor3 = white
+toggleButton.Font = Enum.Font.GothamBold
+toggleButton.TextSize = 13
+toggleButton.BorderSizePixel = 0
+toggleButton.Parent = frame
+
+local toggleCorner = Instance.new("UICorner")
+toggleCorner.CornerRadius = UDim.new(0, 8)
+toggleCorner.Parent = toggleButton
+
+local toggleStroke = Instance.new("UIStroke")
+toggleStroke.Color = Color3.fromRGB(0, 180, 70)
+toggleStroke.Thickness = 1.5
+toggleStroke.Parent = toggleButton
+
+local freezeButton = Instance.new("TextButton")
+freezeButton.Name = "FreezeButton"
+freezeButton.Size = UDim2.new(0, 130, 0, 28)
+freezeButton.Position = UDim2.new(0.5, -65, 0, 62)
+freezeButton.BackgroundColor3 = Color3.fromRGB(60, 60, 140)
+freezeButton.Text = "❄️ Freeze ❄️"
+freezeButton.TextColor3 = white
+freezeButton.Font = Enum.Font.GothamBold
+freezeButton.TextSize = 13
+freezeButton.BorderSizePixel = 0
+freezeButton.Parent = frame
+
+local freezeCorner = Instance.new("UICorner")
+freezeCorner.CornerRadius = UDim.new(0, 8)
+freezeCorner.Parent = freezeButton
+
+local freezeStroke = Instance.new("UIStroke")
+freezeStroke.Color = Color3.fromRGB(80, 80, 170)
+freezeStroke.Thickness = 1.5
+freezeStroke.Parent = freezeButton
+
+local freeCamEnabled = false
+local freezeEnabled = false
+local speed = 120
+local pitch = 0
+local yaw = 0
+local upValue = 0
+local downValue = 0
+local draggingCamera = false
+local frozenPosition = nil
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.E then upValue = 1 end
+    if input.KeyCode == Enum.KeyCode.Q then downValue = 1 end
+    if input.UserInputType == Enum.UserInputType.MouseButton2 or input.UserInputType == Enum.UserInputType.Touch then
+        draggingCamera = true
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.E then upValue = 0 end
+    if input.KeyCode == Enum.KeyCode.Q then downValue = 0 end
+    if input.UserInputType == Enum.UserInputType.MouseButton2 or input.UserInputType == Enum.UserInputType.Touch then
+        draggingCamera = false
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input, gameProcessed)
+    if gameProcessed and input.UserInputType == Enum.UserInputType.Touch then return end
+    
+    if freeCamEnabled then
+        local isMouse = input.UserInputType == Enum.UserInputType.MouseMovement
+        local isTouch = input.UserInputType == Enum.UserInputType.Touch
+        
+        if isTouch or (isMouse and UserInputService.MouseBehavior == Enum.MouseBehavior.LockCenter) or (isMouse and draggingCamera) then
+            local delta = input.Delta
+            local sensitivity = 0.25
+            yaw = yaw - math.rad(delta.X * sensitivity)
+            pitch = math.clamp(pitch - math.rad(delta.Y * sensitivity), -math.rad(89), math.rad(89))
+        end
+    end
+end)
+
+local function onRenderStep(dt)
+    if not freeCamEnabled then return end
+    
+    if freezeEnabled and frozenPosition then
+        local rotationCFrame = CFrame.Angles(0, yaw, 0) * CFrame.Angles(pitch, 0, 0)
+        camera.CFrame = CFrame.new(frozenPosition) * rotationCFrame
+        return
+    end
+    
+    local moveVector = controls:GetMoveVector()
+    local totalMove = Vector3.new(moveVector.X, upValue - downValue, moveVector.Z)
+    if totalMove.Magnitude > 0 then
+        totalMove = totalMove.Unit * speed * dt
+    end
+    local rotationCFrame = CFrame.Angles(0, yaw, 0) * CFrame.Angles(pitch, 0, 0)
+    camera.CFrame = CFrame.new(camera.CFrame.Position) * rotationCFrame * CFrame.new(totalMove)
+end
+
+local function enableFreeCam()
+    freeCamEnabled = true
+    toggleButton.Text = "Free cam"
+    toggleButton.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
+    toggleStroke.Color = Color3.fromRGB(210, 60, 60)
+    camera.CameraType = Enum.CameraType.Scriptable
+    local cx, cy, cz = camera.CFrame:ToEulerAnglesYXZ()
+    pitch = cx
+    yaw = cy
+    if UserInputService.KeyboardEnabled and UserInputService.MouseEnabled then
+        UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+    end
+    RunService:BindToRenderStep("FreeCamUpdate", Enum.RenderPriority.Camera.Value + 1, onRenderStep)
+end
+
+local function disableFreeCam()
+    freeCamEnabled = false
+    freezeEnabled = false
+    frozenPosition = nil
+    toggleButton.Text = "Free cam"
+    toggleButton.BackgroundColor3 = Color3.fromRGB(0, 150, 50)
+    toggleStroke.Color = Color3.fromRGB(0, 180, 70)
+    freezeButton.BackgroundColor3 = Color3.fromRGB(60, 60, 140)
+    freezeStroke.Color = Color3.fromRGB(80, 80, 170)
+    camera.CameraType = Enum.CameraType.Custom
+    camera.CameraSubject = player.Character and player.Character:FindFirstChild("Humanoid")
+    UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+    RunService:UnbindFromRenderStep("FreeCamUpdate")
+end
+
+local function toggleFreeze()
+    if not freeCamEnabled then
+        enableFreeCam()
+    end
+    
+    freezeEnabled = not freezeEnabled
+    
+    if freezeEnabled then
+        frozenPosition = camera.CFrame.Position
+        freezeButton.BackgroundColor3 = Color3.fromRGB(180, 150, 50)
+        freezeStroke.Color = Color3.fromRGB(210, 180, 70)
+    else
+        frozenPosition = nil
+        freezeButton.BackgroundColor3 = Color3.fromRGB(60, 60, 140)
+        freezeStroke.Color = Color3.fromRGB(80, 80, 170)
+    end
+end
+
+toggleButton.MouseButton1Click:Connect(function()
+    if freeCamEnabled then
+        disableFreeCam()
+    else
+        enableFreeCam()
+    end
+end)
+
+freezeButton.MouseButton1Click:Connect(toggleFreeze)
+            end
+        end
+    end
+})
 -- Keep a reference to revertedRemotes on System if present
 if System and System.__properties then
     System.__properties.__reverted_remotes = revertedRemotes
