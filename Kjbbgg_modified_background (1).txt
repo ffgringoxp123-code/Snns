@@ -4653,7 +4653,7 @@ local sword_changer_module = AvatarTab:create_module({
     title = 'Sword Changer',
     flag = 'SwordChanger',
     description = 'Change your sword, animation, and FX',
-    section = 'left',
+    section = 'right',
     callback = function(val)
         getgenv().skinChangerEnabled = val
         if getgenv().updateSword then getgenv().updateSword() end
