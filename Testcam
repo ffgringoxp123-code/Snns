@@ -4548,8 +4548,26 @@ local UserInputService = game:GetService("UserInputService")
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
-local PlayerModule = require(player:WaitForChild("PlayerScripts"):WaitForChild("PlayerModule"))
-local controls = PlayerModule:GetControls()
+local controls = {}
+
+function controls:GetMoveVector()
+    local move = Vector3.zero
+
+    if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+        move += Vector3.new(0,0,-1)
+    end
+    if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+        move += Vector3.new(0,0,1)
+    end
+    if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+        move += Vector3.new(-1,0,0)
+    end
+    if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+        move += Vector3.new(1,0,0)
+    end
+
+    return move
+end
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "FreeCamGUI"
@@ -4569,7 +4587,9 @@ frame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 frame.BackgroundTransparency = 1
 frame.BorderSizePixel = 0
 frame.Active = true
-frame.Draggable = true
+pcall(function()
+    frame.Draggable = true
+end)
 frame.Parent = gui
 
 local frameStroke = Instance.new("UIStroke")
