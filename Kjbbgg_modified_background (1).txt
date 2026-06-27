@@ -4661,7 +4661,7 @@ local sword_changer_module = SwordTab:create_module({
     end
 })
 
-sword_changer:create_checkbox({
+sword_changer_module:create_checkbox({
     title = "Change Sword Model",
     flag = "changeSwordModel",
     callback = function(val)
@@ -4672,7 +4672,7 @@ sword_changer:create_checkbox({
     end
 })
 
-sword_changer:create_textbox({
+sword_changer_module:create_textbox({
     title = "Sword Model Name",
     placeholder = "nhìn cặc hihi",
     flag = "swordModelName",
