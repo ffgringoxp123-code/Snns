@@ -4674,8 +4674,8 @@ sword_changer:create_checkbox({
 
 sword_changer:create_textbox({
     title = "Sword Model Name",
-    placeholder = "e.g. Yin Yang Greatsword",
-    flag = "swordModel",
+    placeholder = "nhìn cặc hihi",
+    flag = "swordModelName",
     callback = function(val)
         getgenv().swordModel = val
         getgenv().swordAnimations = val
@@ -4914,74 +4914,6 @@ local function createBillboardGui(p)
         end)
     end)
 end
-
--- Initialize global flag if not present
-getgenv().AbilityESP = getgenv().AbilityESP or false
-
--- Byte_Library: Headless & Korblox utilities (from EagleX)
-local Byte_Library = {}
-function Byte_Library.Korblox(char)
-    if not char then return end
-    local leg = char:FindFirstChild("Right Leg")
-    if not leg then return end
-    if not leg:FindFirstChild("KorbloxMesh") then
-        for _, v in leg:GetChildren() do if v:IsA("SpecialMesh") then v:Destroy() end end
-        local m = Instance.new("SpecialMesh")
-        m.Name = "KorbloxMesh"
-        m.MeshId = "rbxassetid://902942096"
-        m.TextureId = "rbxassetid://902843398"
-        m.Offset = Vector3.new(0, 0.7, 0)
-        m.Parent = leg
-    end
-end
-function Byte_Library.Restore_Leg(char)
-    if not char then return end
-    local leg = char:FindFirstChild("Right Leg")
-    if not leg then return end
-    for _, v in leg:GetChildren() do if v:IsA("SpecialMesh") then v:Destroy() end end
-end
-function Byte_Library.Headless(char)
-    if not char then return end
-    local head = char:FindFirstChild("Head")
-    if not head then return end
-    head.Transparency = 1
-    for _, child in head:GetChildren() do
-        if child:IsA("Decal") or child.Name == "face" then
-            child.Transparency = 1
-        elseif child:IsA("SpecialMesh") or child:IsA("DataModelMesh") then
-            if not child:GetAttribute("OriginalScale") then
-                child:SetAttribute("OriginalScale", child.Scale)
-                child.Scale = Vector3.new(0, 0, 0)
-            end
-        end
-    end
-end
-function Byte_Library.Restore_Head(char)
-    if not char then return end
-    local head = char:FindFirstChild("Head")
-    if not head then return end
-    head.Transparency = 0
-    for _, child in head:GetChildren() do
-        if child:IsA("Decal") or child.Name == "face" then
-            child.Transparency = 0
-        elseif child:IsA("SpecialMesh") or child:IsA("DataModelMesh") then
-            local orig = child:GetAttribute("OriginalScale")
-            if orig then
-                child.Scale = orig
-                child:SetAttribute("OriginalScale", nil)
-            end
-        end
-    end
-end
-
-local headlessKorblox_conn = nil
-LocalPlayer.CharacterAdded:Connect(function(char)
-    task.wait(0.5)
-    if getgenv().HeadlessKorbloxEnabled then
-        Byte_Library.Headless(char)
-        Byte_Library.Korblox(char)
-    end
-end)
 
 local no_render_module = SettingTab:create_module({
     title = "No Render",
