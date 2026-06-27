@@ -4569,6 +4569,10 @@ function controls:GetMoveVector()
     return move
 end
 
+if player.PlayerGui:FindFirstChild("FreeCamGUI") then
+    player.PlayerGui.FreeCamGUI:Destroy()
+end
+
 local gui = Instance.new("ScreenGui")
 gui.Name = "FreeCamGUI"
 gui.ResetOnSpawn = false
@@ -4719,9 +4723,9 @@ local function enableFreeCam()
     toggleButton.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
     toggleStroke.Color = Color3.fromRGB(210, 60, 60)
     camera.CameraType = Enum.CameraType.Scriptable
-    local cx, cy, cz = camera.CFrame:ToEulerAnglesYXZ()
-    pitch = cx
-    yaw = cy
+    local x, y = camera.CFrame:ToOrientation()
+    pitch = x
+    yaw = y
     if UserInputService.KeyboardEnabled and UserInputService.MouseEnabled then
         UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
     end
