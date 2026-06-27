@@ -4751,8 +4751,6 @@ task.spawn(function()
             end
         end)
 
-
-
         if setthreadidentity then setthreadidentity(oldId) end
     end
 
