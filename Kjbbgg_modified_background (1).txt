@@ -2923,6 +2923,7 @@ library:load()
 
 -- Create tabs
 local AutoparryTab = library:create_tab("Main", "rbxassetid://76499042599127")
+local AvatarTab = library:create_tab("Avatar", "rbxassetid://126017907477623")
 local SettingTab = library:create_tab("Setting", "rbxassetid://6031280882")
 
 local function Notify(settings)
@@ -4345,6 +4346,76 @@ auto_spam_module:create_slider({
     round_number = true,
     callback = function(value)
         if System then System.__properties.__auto_spam_distance_multiplier = value end
+    end
+})
+
+local avatar_module = AvatarTab:create_module({
+    title = 'Avatar Changer',
+    flag = 'AvatarChanger',
+    description = 'Change your avatar to another player',
+    section = 'left',
+    callback = function(val)
+        __flags['Skin Changer'] = val
+
+        if val then
+            local __char = __localplayer.Character
+
+            if __char and __flags['name'] then
+                __set(__flags['name'], __char)
+            end
+
+            -- Conectar CharacterAdded para reaplicar sempre no spawn/respawn
+            __flags['loop'] = __localplayer.CharacterAdded:Connect(function(char)
+                task.wait(0.05)
+                if __flags['name'] then
+                    __set(__flags['name'], char)
+                end
+            end)
+        else
+            -- Desligando: desconectar e tentar restaurar skin local
+            if __flags['loop'] then
+                __flags['loop']:Disconnect()
+                __flags['loop'] = nil
+
+                -- Para tarefas persistentes
+                __stop_all_persistent()
+
+                local __char = __localplayer.Character
+
+                if __char then
+                    -- Restaura a aparência original do próprio jogador
+                    pcall(function()
+                        __localplayer:ClearCharacterAppearance()
+                        -- tenta reaplicar descrição padrão do usuário
+                        local ok, desc = pcall(function()
+                            return __players:GetHumanoidDescriptionFromUserId(__localplayer.UserId)
+                        end)
+                        if ok and desc then
+                            local hum = __char:FindFirstChildOfClass("Humanoid") or __char:WaitForChild("Humanoid", 3)
+                            if hum then
+                                hum:ApplyDescriptionClientServer(desc)
+                            end
+                        end
+                    end)
+                end
+            end
+        end
+    end
+})
+
+avatar_module:create_textbox({
+    title = "Target Username",
+    placeholder = "Enter Username...",
+    flag = "AvatarChangerTextbox",
+    callback = function(val: string)
+        __flags['name'] = val
+
+        if __flags['Skin Changer'] and val ~= '' then
+            local __char = __localplayer.Character
+            if __char then
+                __set(val, __char)
+            end
+        end
     end
 })
 
