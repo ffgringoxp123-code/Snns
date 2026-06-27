@@ -4535,6 +4535,20 @@ local no_render_module = SettingTab:create_module({
     end
 })
 
+local FreeCamModule = SettingsTab:create_module({
+    title = "Free Cam",
+    description = "Enable Free Camera",
+    flag = "FreeCam",
+    section = "left",
+    callback = function(state)
+        if state then
+            enableFreeCam()
+        else
+            disableFreeCam()
+        end
+    end
+})
+
 -- Keep a reference to revertedRemotes on System if present
 if System and System.__properties then
     System.__properties.__reverted_remotes = revertedRemotes
