@@ -2924,6 +2924,7 @@ library:load()
 -- Create tabs
 local AutoparryTab = library:create_tab("Main", "rbxassetid://76499042599127")
 local AvatarTab = library:create_tab("Avatar", "rbxassetid://126017907477623")
+local SwordTab = library:create_tab("Sword", "rbxassetid://6031094670")
 local SettingTab = library:create_tab("Setting", "rbxassetid://6031280882")
 
 local function Notify(settings)
@@ -4649,11 +4650,11 @@ avatar_module:create_textbox({
     end
 })
 
-local sword_changer_module = AvatarTab:create_module({
+local sword_changer_module = SwordTab:create_module({
     title = 'Sword Changer',
     flag = 'SwordChanger',
     description = 'Change your sword, animation, and FX',
-    section = 'right',
+    section = 'left',
     callback = function(val)
         getgenv().skinChangerEnabled = val
         if getgenv().updateSword then getgenv().updateSword() end
