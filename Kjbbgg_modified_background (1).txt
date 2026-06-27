@@ -4649,7 +4649,8 @@ avatar_module:create_textbox({
         end
     end
 })
-    local drag_start, start_pos
+   
+local drag_start, start_pos
 
     header.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1
