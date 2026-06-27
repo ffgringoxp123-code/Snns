@@ -2924,6 +2924,7 @@ library:load()
 -- Create tabs
 local AutoparryTab = library:create_tab("Main", "rbxassetid://76499042599127")
 local AvatarTab = library:create_tab("Avatar", "rbxassetid://126017907477623")
+local VisualsTab = library:create_tab("Visuals", "rbxassetid://6031094678")
 local SettingTab = library:create_tab("Setting", "rbxassetid://6031280882")
 
 local function Notify(settings)
@@ -4648,7 +4649,117 @@ avatar_module:create_textbox({
         end
     end
 })
+    local drag_start, start_pos
 
+    header.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+            or input.UserInputType == Enum.UserInputType.Touch then
+
+            ball_velocity.__state.is_dragging = true
+            drag_start = input.Position
+            start_pos = main_frame.Position
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if ball_velocity.__state.is_dragging and
+            (input.UserInputType == Enum.UserInputType.MouseMovement
+            or input.UserInputType == Enum.UserInputType.Touch) then
+
+            local delta = input.Position - drag_start
+            local newpos = UDim2.new(
+                start_pos.X.Scale, start_pos.X.Offset + delta.X,
+                start_pos.Y.Scale, start_pos.Y.Offset + delta.Y
+            )
+
+            main_frame.Position = newpos
+        end
+    end)
+
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1
+            or input.UserInputType == Enum.UserInputType.Touch then
+
+            ball_velocity.__state.is_dragging = false
+            save_pos(main_frame.Position)
+        end
+    end)
+
+    return gui, current_value, peak_value
+end
+
+function ball_velocity.start()
+    if ball_velocity.__state.active then return end
+
+    ball_velocity.__state.active = true
+    ball_velocity.__state.ball_data = {}
+
+    local gui, current_value, peak_value = ball_velocity.create_gui()
+    ball_velocity.__state.gui = gui
+
+    System.__properties.__connections.ball_velocity =
+        RunService.Heartbeat:Connect(function()
+
+            local ball = System.ball.get()
+
+            if not ball then
+                current_value.Text = "0.0"
+                peak_value.Text = "0.0"
+                return
+            end
+
+            local zoomies = ball:FindFirstChild("zoomies")
+            if not zoomies then
+                current_value.Text = "0.0"
+                return
+            end
+
+            local velocity = zoomies.VectorVelocity.Magnitude
+
+            ball_velocity.__state.ball_data[ball] =
+                ball_velocity.__state.ball_data[ball] or 0
+
+            if velocity > ball_velocity.__state.ball_data[ball] then
+                ball_velocity.__state.ball_data[ball] = velocity
+            end
+
+            current_value.Text = string.format("%.1f", velocity)
+            peak_value.Text = string.format("%.1f",
+                ball_velocity.__state.ball_data[ball])
+        end)
+end
+
+function ball_velocity.stop()
+    if not ball_velocity.__state.active then return end
+
+    ball_velocity.__state.active = false
+
+    if System.__properties.__connections.ball_velocity then
+        System.__properties.__connections.ball_velocity:Disconnect()
+        System.__properties.__connections.ball_velocity = nil
+    end
+
+    if ball_velocity.__state.gui then
+        ball_velocity.__state.gui:Destroy()
+        ball_velocity.__state.gui = nil
+    end
+
+    ball_velocity.__state.ball_data = {}
+end
+
+local visuals_module = VisualsTab:create_module({
+    title = "Show Ball Velocity",
+    description = "",
+    flag = "ballvelocity",
+    section = "right",
+    callback = function(state)
+        if state then
+            ball_velocity.start()
+        else
+            ball_velocity.stop()
+        end
+    end
+})
 -- Player modules (Avatar, FOV, Character)
 local __flags = {}
 local __players = cloneref(game:GetService('Players'))
