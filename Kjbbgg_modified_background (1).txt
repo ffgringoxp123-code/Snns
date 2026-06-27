@@ -4649,6 +4649,186 @@ avatar_module:create_textbox({
     end
 })
 
+local sword_changer_module = AvatarTab:create_module({
+    title = 'Sword Changer',
+    flag = 'SwordChanger',
+    description = 'Change your sword, animation, and FX',
+    section = 'left',
+    callback = function(val)
+        getgenv().skinChangerEnabled = val
+        if getgenv().updateSword then getgenv().updateSword() end
+    end
+})
+
+avatar_module:create_checkbox({
+    title = "Change Sword Model",
+    flag = "changeSwordModel",
+    callback = function(val)
+        getgenv().changeSwordModel = val
+        getgenv().changeSwordAnimation = val
+        getgenv().changeSwordFX = val
+        if getgenv().updateSword then getgenv().updateSword() end
+    end
+})
+
+avatar_module:create_textbox({
+    title = "Sword Model Name",
+    placeholder = "e.g. Yin Yang Greatsword",
+    flag = "swordModel",
+    callback = function(val)
+        getgenv().swordModel = val
+        getgenv().swordAnimations = val
+        getgenv().swordFX = val
+        if getgenv().updateSword then getgenv().updateSword() end
+    end
+})
+
+task.spawn(function()
+    local oldId = getthreadidentity and getthreadidentity() or 2
+    if setthreadidentity then setthreadidentity(2) end
+
+    local swordInstancesInstance = ReplicatedStorage:WaitForChild("Shared", 9e9):WaitForChild("ReplicatedInstances", 9e9):WaitForChild("Swords", 9e9)
+    local swordInstances = require(swordInstancesInstance)
+
+    if setthreadidentity then setthreadidentity(oldId) end
+
+    local swordsController
+
+    while task.wait() and (not swordsController) do
+        for i, v in pairs(getconnections(ReplicatedStorage.Remotes.FireSwordInfo.OnClientEvent)) do
+            if v.Function and islclosure(v.Function) then
+                local upvalues = getupvalues(v.Function)
+                if #upvalues == 1 and type(upvalues[1]) == "table" then
+                    swordsController = upvalues[1]
+                    break
+                end
+            end
+        end
+    end
+
+    local function getSlashName(swordName)
+        local oldId = getthreadidentity and getthreadidentity() or 2
+        if setthreadidentity then setthreadidentity(2) end
+
+        local slashName
+        pcall(function() slashName = swordInstances:GetSword(swordName) end)
+
+        if setthreadidentity then setthreadidentity(oldId) end
+        return (slashName and slashName.SlashName) or "SlashEffect"
+    end
+
+    local function setSword()
+        if not getgenv().skinChangerEnabled then return end
+        
+        local char = LocalPlayer.Character
+        local aliveFolder = workspace:FindFirstChild("Alive")
+        if not char or not aliveFolder or char.Parent ~= aliveFolder then return end
+        if not char:FindFirstChild("Humanoid") or char.Humanoid.Health <= 0 then return end
+        
+        local oldId = getthreadidentity and getthreadidentity() or 2
+        if setthreadidentity then setthreadidentity(2) end
+
+        pcall(function()
+            setupvalue(rawget(swordInstances, "EquipSwordTo"), 3, false)
+            if getgenv().changeSwordModel and getgenv().swordModel and getgenv().swordModel ~= "" then
+                swordInstances:EquipSwordTo(char, getgenv().swordModel)
+                
+                -- Only stop sword-specific animations, preserve walk/run animations
+                local humanoid = char:FindFirstChild("Humanoid")
+                local animator = humanoid and humanoid:FindFirstChildOfClass("Animator")
+                if animator then
+                    for _, track in pairs(animator:GetPlayingAnimationTracks()) do
+                        local animName = track.Name:lower()
+                        -- Only stop sword/idle animations, preserve movement animations
+                        if animName:match("sword") or animName:match("idle") or animName:match("equip") then
+                            track:Stop()
+                        end
+                    end
+                end
+            end
+            if getgenv().changeSwordAnimation and getgenv().swordAnimations and getgenv().swordAnimations ~= "" then
+                swordsController:SetSword(getgenv().swordAnimations)
+            end
+        end)
+
+
+
+        if setthreadidentity then setthreadidentity(oldId) end
+    end
+
+    local playParryFunc
+    local parrySuccessAllConnection
+
+    while task.wait() and not parrySuccessAllConnection do
+        for i, v in pairs(getconnections(ReplicatedStorage.Remotes.ParrySuccessAll.OnClientEvent)) do
+            if v.Function and getinfo(v.Function).name == "parrySuccessAll" then
+                parrySuccessAllConnection = v
+                playParryFunc = v.Function
+                v:Disable()
+            end
+        end
+    end
+
+    local parrySuccessClientConnection
+    while task.wait() and not parrySuccessClientConnection do
+        for i, v in pairs(getconnections(ReplicatedStorage.Remotes.ParrySuccessClient.Event)) do
+            if v.Function and getinfo(v.Function).name == "parrySuccessAll" then
+                parrySuccessClientConnection = v
+                v:Disable()
+            end
+        end
+    end
+
+    getgenv().slashName = getSlashName(getgenv().swordFX)
+
+    local lastOtherParryTimestamp = 0
+    local clashConnections = {}
+
+    ReplicatedStorage.Remotes.ParrySuccessAll.OnClientEvent:Connect(function(...)
+        setthreadidentity(2)
+        local args = {...}
+        if tostring(args[4]) ~= LocalPlayer.Name then
+            lastOtherParryTimestamp = tick()
+        elseif getgenv().skinChangerEnabled and getgenv().changeSwordFX and getgenv().swordFX and getgenv().swordFX ~= "" then
+            args[1] = getgenv().slashName
+            args[3] = getgenv().swordFX
+        end
+        return playParryFunc(unpack(args))
+    end)
+
+    table.insert(clashConnections, getconnections(ReplicatedStorage.Remotes.ParrySuccessAll.OnClientEvent)[1])
+
+    getgenv().updateSword = function()
+        if getgenv().changeSwordFX and getgenv().swordFX and getgenv().swordFX ~= "" then
+            getgenv().slashName = getSlashName(getgenv().swordFX)
+        end
+        setSword()
+    end
+
+    while task.wait(0.1) do
+        if getgenv().skinChangerEnabled and getgenv().changeSwordModel and getgenv().swordModel and getgenv().swordModel ~= "" then
+            local char = LocalPlayer.Character
+            local aliveFolder = workspace:FindFirstChild("Alive")
+            if char and aliveFolder and char.Parent == aliveFolder and char:FindFirstChild("Humanoid") and char.Humanoid.Health > 0 then
+                local currentServerSword = LocalPlayer:GetAttribute("CurrentlyEquippedSword")
+                
+                if currentServerSword and currentServerSword ~= getgenv().swordModel and currentServerSword ~= char:GetAttribute("LastOverwrittenSword") then
+                    char:SetAttribute("LastOverwrittenSword", currentServerSword)
+                    setSword()
+                elseif not char:FindFirstChild(getgenv().swordModel) then
+                    setSword()
+                end
+                
+                for _, v in pairs(char:GetChildren()) do
+                    if v:IsA("Model") and v.Name ~= getgenv().swordModel and v:FindFirstChild("Handle") then
+                        v:Destroy()
+                    end
+                end
+            end
+        end
+    end
+end)
+
 -- Player modules (Avatar, FOV, Character)
 local __flags = {}
 local __players = cloneref(game:GetService('Players'))
