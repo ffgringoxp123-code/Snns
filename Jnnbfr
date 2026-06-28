@@ -3407,63 +3407,6 @@ function System.curve.get_cframe()
     return curve_functions[System.__properties.__curve_mode]()
 end
 
-System.manual_spam = {}
-
--- Manual spam ramp-up state: starts slow and accelerates to full rate over
--- the first ~500ms. Matches Condemned's behavior so manual spam doesn't
--- start at 420Hz instantly (looks more natural and avoids the immediate
--- burst that can trigger anti-cheat heuristics).
-local manualSpamStartTick = 0
-local lastManualSpamTick = 0
-
-function System.manual_spam.loop(delta)
-    if not System.__properties.__manual_spam_enabled then return end
-    if not LocalPlayer.Character or LocalPlayer.Character.Parent ~= Alive then return end
-    
-    -- Acceleration: 1.0x at start ramping up to 1.5x at 0.5s elapsed and capped.
-    local baseRate = System.__properties.__spam_rate
-    local elapsed = tick() - manualSpamStartTick
-    local accelFactor = math.min(1 + (elapsed / 0.5) * 0.5, 1.5)
-    local effectiveRate = baseRate * accelFactor
-    local interval = 1 / effectiveRate
-    
-    local now = tick()
-    local timeSinceLast = now - lastManualSpamTick
-    
-    if timeSinceLast >= interval then
-        -- Burst fire to bridge FPS gaps (cap at 5 to avoid rate-limit kicks)
-        local fireAmount = math.min(math.floor(timeSinceLast / interval), 5)
-        lastManualSpamTick = now
-        for i = 1, fireAmount do
-            System.parry.execute()
-            if getgenv().ManualSpamAnimationFix then
-                System.animation.spam_sequence()
-            end
-        end
-    end
-end
-
-function System.manual_spam.start()
-    if System.__properties.__connections.__manual_spam then
-        System.__properties.__connections.__manual_spam:Disconnect()
-    end
-    
-    System.__properties.__manual_spam_enabled = true
-    -- Reset ramp-up timing on each start
-    manualSpamStartTick = tick()
-    lastManualSpamTick = tick()
-    System.__properties.__connections.__manual_spam = RunService.Heartbeat:Connect(System.manual_spam.loop)
-end
-
-function System.manual_spam.stop()
-    System.__properties.__manual_spam_enabled = false
-    manualSpamStartTick = 0
-    if System.__properties.__connections.__manual_spam then
-        System.__properties.__connections.__manual_spam:Disconnect()
-        System.__properties.__connections.__manual_spam = nil
-    end
-end
-
 System.auto_spam = {}
 
 function System.auto_spam:get_entity_properties()
@@ -4251,6 +4194,63 @@ function System.autoparry.stop()
     if System.__properties.__connections.__autoparry then
         System.__properties.__connections.__autoparry:Disconnect()
         System.__properties.__connections.__autoparry = nil
+    end
+end
+
+System.manual_spam = {}
+
+-- Manual spam ramp-up state: starts slow and accelerates to full rate over
+-- the first ~500ms. Matches Condemned's behavior so manual spam doesn't
+-- start at 420Hz instantly (looks more natural and avoids the immediate
+-- burst that can trigger anti-cheat heuristics).
+local manualSpamStartTick = 0
+local lastManualSpamTick = 0
+
+function System.manual_spam.loop(delta)
+    if not System.__properties.__manual_spam_enabled then return end
+    if not LocalPlayer.Character or LocalPlayer.Character.Parent ~= Alive then return end
+    
+    -- Acceleration: 1.0x at start ramping up to 1.5x at 0.5s elapsed and capped.
+    local baseRate = System.__properties.__spam_rate
+    local elapsed = tick() - manualSpamStartTick
+    local accelFactor = math.min(1 + (elapsed / 0.5) * 0.5, 1.5)
+    local effectiveRate = baseRate * accelFactor
+    local interval = 1 / effectiveRate
+    
+    local now = tick()
+    local timeSinceLast = now - lastManualSpamTick
+    
+    if timeSinceLast >= interval then
+        -- Burst fire to bridge FPS gaps (cap at 5 to avoid rate-limit kicks)
+        local fireAmount = math.min(math.floor(timeSinceLast / interval), 5)
+        lastManualSpamTick = now
+        for i = 1, fireAmount do
+            System.parry.execute()
+            if getgenv().ManualSpamAnimationFix then
+                System.animation.spam_sequence()
+            end
+        end
+    end
+end
+
+function System.manual_spam.start()
+    if System.__properties.__connections.__manual_spam then
+        System.__properties.__connections.__manual_spam:Disconnect()
+    end
+    
+    System.__properties.__manual_spam_enabled = true
+    -- Reset ramp-up timing on each start
+    manualSpamStartTick = tick()
+    lastManualSpamTick = tick()
+    System.__properties.__connections.__manual_spam = RunService.Heartbeat:Connect(System.manual_spam.loop)
+end
+
+function System.manual_spam.stop()
+    System.__properties.__manual_spam_enabled = false
+    manualSpamStartTick = 0
+    if System.__properties.__connections.__manual_spam then
+        System.__properties.__connections.__manual_spam:Disconnect()
+        System.__properties.__connections.__manual_spam = nil
     end
 end
 
