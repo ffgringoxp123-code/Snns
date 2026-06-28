@@ -4716,7 +4716,7 @@ manual_spam_module:create_slider({
     end
 })
 
-local auto_spam_module = AutoparryTab:create_module({
+manual_spam_module:create_module({
     title = 'Auto Spam',
     flag = 'Auto_Spam_Parry',
     description = 'Automatically spam parries ball',
