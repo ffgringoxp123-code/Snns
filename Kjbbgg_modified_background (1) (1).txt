@@ -3407,6 +3407,219 @@ function System.curve.get_cframe()
     return curve_functions[System.__properties.__curve_mode]()
 end
 
+System.manual_spam = {}
+
+-- Manual spam ramp-up state: starts slow and accelerates to full rate over
+-- the first ~500ms. Matches Condemned's behavior so manual spam doesn't
+-- start at 420Hz instantly (looks more natural and avoids the immediate
+-- burst that can trigger anti-cheat heuristics).
+local manualSpamStartTick = 0
+local lastManualSpamTick = 0
+
+function System.manual_spam.loop(delta)
+    if not System.__properties.__manual_spam_enabled then return end
+    if not LocalPlayer.Character or LocalPlayer.Character.Parent ~= Alive then return end
+    
+    -- Acceleration: 1.0x at start ramping up to 1.5x at 0.5s elapsed and capped.
+    local baseRate = System.__properties.__spam_rate
+    local elapsed = tick() - manualSpamStartTick
+    local accelFactor = math.min(1 + (elapsed / 0.5) * 0.5, 1.5)
+    local effectiveRate = baseRate * accelFactor
+    local interval = 1 / effectiveRate
+    
+    local now = tick()
+    local timeSinceLast = now - lastManualSpamTick
+    
+    if timeSinceLast >= interval then
+        -- Burst fire to bridge FPS gaps (cap at 5 to avoid rate-limit kicks)
+        local fireAmount = math.min(math.floor(timeSinceLast / interval), 5)
+        lastManualSpamTick = now
+        for i = 1, fireAmount do
+            System.parry.execute()
+            if getgenv().ManualSpamAnimationFix then
+                System.animation.spam_sequence()
+            end
+        end
+    end
+end
+
+function System.manual_spam.start()
+    if System.__properties.__connections.__manual_spam then
+        System.__properties.__connections.__manual_spam:Disconnect()
+    end
+    
+    System.__properties.__manual_spam_enabled = true
+    -- Reset ramp-up timing on each start
+    manualSpamStartTick = tick()
+    lastManualSpamTick = tick()
+    System.__properties.__connections.__manual_spam = RunService.Heartbeat:Connect(System.manual_spam.loop)
+end
+
+function System.manual_spam.stop()
+    System.__properties.__manual_spam_enabled = false
+    manualSpamStartTick = 0
+    if System.__properties.__connections.__manual_spam then
+        System.__properties.__connections.__manual_spam:Disconnect()
+        System.__properties.__connections.__manual_spam = nil
+    end
+end
+
+System.auto_spam = {}
+
+function System.auto_spam:get_entity_properties()
+    System.player.get_closest()
+    
+    if not Closest_Entity then return false end
+    
+    local entity_velocity = Closest_Entity.PrimaryPart.Velocity
+    local entity_direction = (LocalPlayer.Character.PrimaryPart.Position - Closest_Entity.PrimaryPart.Position).Unit
+    local entity_distance = (LocalPlayer.Character.PrimaryPart.Position - Closest_Entity.PrimaryPart.Position).Magnitude
+    
+    return {
+        Velocity = entity_velocity,
+        Direction = entity_direction,
+        Distance = entity_distance
+    }
+end
+
+function System.auto_spam:get_ball_properties()
+    local ball = System.ball.get()
+    if not ball then return false end
+    
+    local ball_velocity = Vector3.zero
+    local ball_origin = ball
+    
+    local ball_direction = (LocalPlayer.Character.PrimaryPart.Position - ball_origin.Position).Unit
+    local ball_distance = (LocalPlayer.Character.PrimaryPart.Position - ball.Position).Magnitude
+    local ball_dot = ball_direction:Dot(ball_velocity.Unit)
+    
+    return {
+        Velocity = ball_velocity,
+        Direction = ball_direction,
+        Distance = ball_distance,
+        Dot = ball_dot
+    }
+end
+
+function System.auto_spam.spam_service(self)
+    local ball = System.ball.get()
+    local entity = System.player.get_closest()
+    
+    if not ball or not entity or not entity.PrimaryPart then
+        return false
+    end
+    
+    local spam_accuracy = 0
+    
+    local velocity = ball.AssemblyLinearVelocity
+    local speed = velocity.Magnitude
+    
+    local direction = (LocalPlayer.Character.PrimaryPart.Position - ball.Position).Unit
+    local dot = direction:Dot(velocity.Unit)
+    
+    local target_position = entity.PrimaryPart.Position
+    local target_distance = LocalPlayer:DistanceFromCharacter(target_position)
+    
+    local maximum_spam_distance = self.Ping + math.min(speed / 6, 255)
+    
+    if self.Entity_Properties.Distance > maximum_spam_distance then
+        return spam_accuracy
+    end
+    
+    if self.Ball_Properties.Distance > maximum_spam_distance then
+        return spam_accuracy
+    end
+    
+    if target_distance > maximum_spam_distance then
+        return spam_accuracy
+    end
+    
+    local maximum_speed = 5 - math.min(speed / 5, 5)
+    local maximum_dot = math.clamp(dot, -1, 0) * maximum_speed
+    
+    spam_accuracy = maximum_spam_distance - maximum_dot
+    
+    return spam_accuracy
+end
+
+function System.auto_spam.start()
+    if System.__properties.__connections.__auto_spam then
+        System.__properties.__connections.__auto_spam:Disconnect()
+    end
+    
+    System.__properties.__auto_spam_enabled = true
+    
+    -- Immediately patch animation on the very first frame auto spam activates
+    if getgenv().AutoSpamAnimationFix then
+        task.spawn(function()
+            System.animation.spam_sequence()
+        end)
+    end
+    
+    System.__properties.__connections.__auto_spam = RunService.PreSimulation:Connect(function()
+        local ball = System.ball.get()
+        
+        if not ball then return end
+        
+        if System.__properties.__slashesoffury_active then return end
+        
+        local zoomies = ball:FindFirstChild('zoomies')
+        if not zoomies then return end
+        
+        System.player.get_closest()
+        
+        local ping = Stats.Network.ServerStatsItem['Data Ping']:GetValue()
+        local ping_threshold = math.clamp(ping / 10, 1, 16)
+        
+        local ball_target = ball:GetAttribute('target')
+        
+        if ball_target == LocalPlayer.Name then
+            local ball_properties = System.auto_spam:get_ball_properties()
+            local entity_properties = System.auto_spam:get_entity_properties()
+            
+            if not ball_properties or not entity_properties then return end
+        
+            local accuracy = System.auto_spam.spam_service({
+                Ping = ping_threshold,
+                Ball_Properties = ball_properties,
+                Entity_Properties = entity_properties
+            })
+        
+            local target_position = Closest_Entity.PrimaryPart.Position
+            local target_distance = LocalPlayer:DistanceFromCharacter(target_position)
+            
+            local direction = (LocalPlayer.Character.PrimaryPart.Position - ball.Position).Unit
+            local ball_direction = zoomies.VectorVelocity.Unit
+            
+            local dot = direction:Dot(ball_direction)
+            local distance = LocalPlayer:DistanceFromCharacter(ball.Position)
+            
+            if not ball_target then return end
+            if target_distance > accuracy or distance > accuracy then return end
+            
+            local pulsed = LocalPlayer.Character:GetAttribute('Pulsed')
+            if pulsed then return end
+            
+            if ball_target == LocalPlayer.Name and target_distance > 30 and distance > 30 then return end
+            
+            if distance <= accuracy and System.__properties.__parries > System.__properties.__spam_threshold then
+                System.parry.execute()
+                if getgenv().AutoSpamAnimationFix then
+                    System.animation.spam_sequence()
+                end
+            end
+        end
+    end)
+end
+
+function System.auto_spam.stop()
+    System.__properties.__auto_spam_enabled = false
+    if System.__properties.__connections.__auto_spam then
+        System.__properties.__connections.__auto_spam:Disconnect()
+        System.__properties.__connections.__auto_spam = nil
+    end
+end
+
 System.parry = {}
 
 function System.parry.execute()
@@ -4346,6 +4559,189 @@ auto_spam_module:create_slider({
     round_number = true,
     callback = function(value)
         if System then System.__properties.__auto_spam_distance_multiplier = value end
+    end
+})
+
+local manual_spam_module = AutoparryTab:create_module({
+    title = "Manual Spam",
+    description = "High-frequency parry spam",
+    flag = "manualspam",
+    section = "right",
+    callback = function(state)
+        if System.__properties.__is_mobile then
+            if state then
+                if not System.__properties.__mobile_guis.manual_spam then
+                    local manual_spam_mobile = create_mobile_button('Spam', 0.8, Color3.fromRGB(255, 105, 180))
+                    System.__properties.__mobile_guis.manual_spam = manual_spam_mobile
+                    
+                    local manual_touch_start = 0
+                    local manual_was_dragged = false
+                    
+                    manual_spam_mobile.button.InputBegan:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.Touch then
+                            manual_touch_start = tick()
+                            manual_was_dragged = false
+                        end
+                    end)
+                    
+                    manual_spam_mobile.button.InputChanged:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.Touch then
+                            if (tick() - manual_touch_start) > 0.1 then
+                                manual_was_dragged = true
+                            end
+                        end
+                    end)
+                    
+                    manual_spam_mobile.button.InputEnded:Connect(function(input)
+                        if input.UserInputType == Enum.UserInputType.Touch and not manual_was_dragged then
+                            System.__properties.__manual_spam_enabled = not System.__properties.__manual_spam_enabled
+                            
+                            if System.__properties.__manual_spam_enabled then
+                                System.manual_spam.start()
+                                manual_spam_mobile.text.Text = "ON"
+                                manual_spam_mobile.text.TextColor3 = Color3.fromRGB(255, 105, 180)
+                            else
+                                System.manual_spam.stop()
+                                manual_spam_mobile.text.Text = "Spam"
+                                manual_spam_mobile.text.TextColor3 = Color3.fromRGB(255, 105, 180)
+                            end
+                            
+                            if getgenv().ManualSpamNotify then
+                                Library.SendNotification({
+                                    title = "ManualSpam",
+                                    text = System.__properties.__manual_spam_enabled and "ON" or "OFF",
+                                    duration = 2
+                                })
+                            end
+                        end
+                    end)
+                end
+            else
+                System.__properties.__manual_spam_enabled = false
+                System.manual_spam.stop()
+                destroy_mobile_gui(System.__properties.__mobile_guis.manual_spam)
+                System.__properties.__mobile_guis.manual_spam = nil
+            end
+        else
+            System.__properties.__manual_spam_enabled = state
+            if state then
+                System.manual_spam.start()
+            else
+                System.manual_spam.stop()
+            end
+            
+            if getgenv().ManualSpamNotify then
+                Library.SendNotification({
+                    title = "Manual Spam",
+                    text = state and "ON" or "OFF",
+                    duration = 2
+                })
+            end
+        end
+    end
+})
+
+manual_spam_module:create_checkbox({
+    title = "Notify",
+    flag = "ManualSpamNotify",
+    callback = function(value)
+        getgenv().ManualSpamNotify = value
+    end
+})
+
+-- Hold Mode (ported from Condemned 1:1):
+-- When enabled, manual spam only fires while the keybind key is HELD DOWN.
+-- Releasing the key turns the toggle off. When disabled (default), the
+-- keybind toggles manual spam on/off like a regular toggle.
+manual_spam_module:create_checkbox({
+    title = "Hold Mode",
+    flag = "ManualSpamHoldMode",
+    callback = function(value)
+        getgenv().ManualSpamHoldMode = value
+        
+        -- If Hold Mode is enabled while manual spam is currently ON,
+        -- turn it off unless the user is actively holding the key.
+        if value and manual_spam_module._state then
+            local boundKey = Library._config._keybinds['manualspam']
+            local isHeld = false
+            if boundKey then
+                pcall(function()
+                    local keyStr = string.gsub(tostring(boundKey), "Enum%.KeyCode%.", "")
+                    local keyEnum = Enum.KeyCode[keyStr]
+                    if keyEnum then
+                        isHeld = UserInputService:IsKeyDown(keyEnum)
+                    end
+                end)
+            end
+            if not isHeld then
+                manual_spam_module:change_state(false)
+            end
+        end
+    end
+})
+
+-- Key release handler: when in Hold Mode and the user releases the bound
+-- key, turn manual spam off. Matches Condemned's behavior.
+UserInputService.InputEnded:Connect(function(input, processed)
+    if processed then return end
+    if not getgenv().ManualSpamHoldMode then return end
+    if not manual_spam_module._state then return end
+    
+    local boundKey = Library._config._keybinds['manualspam']
+    if boundKey and tostring(input.KeyCode) == tostring(boundKey) then
+        manual_spam_module:change_state(false)
+    end
+end)
+
+
+
+manual_spam_module:create_checkbox({
+    title = "Animation Fix",
+    flag = "ManualSpamAnimationFix",
+    callback = function(value)
+        getgenv().ManualSpamAnimationFix = value
+        System.__properties.__manual_spam_animation_fix = value
+    end
+})
+
+manual_spam_module:create_slider({
+    title = 'Spam Rate',
+    flag = 'Spam_Rate',
+    maximum_value = 5000,
+    minimum_value = 60,
+    value = 240,
+    round_number = true,
+    callback = function(value)
+        System.__properties.__spam_rate = value
+    end
+})
+
+local auto_spam_module = AutoparryTab:create_module({
+    title = 'Auto Spam',
+    flag = 'Auto_Spam_Parry',
+    description = 'Automatically spam parries ball',
+    section = 'right',
+    callback = function(value)
+        System.__properties.__auto_spam_enabled = value
+        if value then
+            System.auto_spam.start()
+            if getgenv().AutoSpamNotify then
+                Library.SendNotification({
+                    title = "Auto Spam",
+                    text = "ON",
+                    duration = 2
+                })
+            end
+        else
+            System.auto_spam.stop()
+            if getgenv().AutoSpamNotify then
+                Library.SendNotification({
+                    title = "Auto Spam",
+                    text = "OFF",
+                    duration = 2
+                })
+            end
+        end
     end
 })
 
