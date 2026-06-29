@@ -1,8 +1,7 @@
 --[[
     Skin Changer Sakura Hub - UI Dọc
     Theme: Viền hồng - Chữ hồng - Nền trong suốt
-    Lưu vĩnh viễn - Không mất khi chết
-    Fixed: Change Animations vẫn hoạt động sau khi chết
+    Fixed: Change Animations + Change Sword FX hoạt động sau khi chết và khi đổi kiếm
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -10,52 +9,6 @@ local LocalPlayer = game:GetService("Players").LocalPlayer
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
-
-----------[ LƯU VĨNH VIỄN ]----------
-
--- Dùng file lưu trong workspace hoặc getgenv() + HttpService để lưu
-local HttpService = game:GetService("HttpService")
-local savePath = "sakura_skin_config.json"
-
--- Load config từ file (nếu có)
-local function loadConfig()
-    local success, data = pcall(function()
-        return readfile(savePath)
-    end)
-    if success and data then
-        local decoded = HttpService:JSONDecode(data)
-        return decoded
-    end
-    return nil
-end
-
--- Save config
-local function saveConfig(config)
-    local data = HttpService:JSONEncode(config)
-    pcall(function()
-        writefile(savePath, data)
-    end)
-end
-
--- Load config khi bắt đầu
-local savedConfig = loadConfig()
-
-getgenv().skinChangerEnabled = savedConfig and savedConfig.enabled or false
-getgenv().changeSwordModel = true
-getgenv().changeSwordAnimation = true
-getgenv().changeSwordFX = true
-getgenv().swordModel = savedConfig and savedConfig.swordName or ""
-getgenv().swordAnimations = savedConfig and savedConfig.swordName or ""
-getgenv().swordFX = savedConfig and savedConfig.swordName or ""
-
--- Hàm lưu trạng thái
-local function persistState(enabled, swordName)
-    local config = {
-        enabled = enabled,
-        swordName = swordName or ""
-    }
-    saveConfig(config)
-end
 
 ----------[ SKIN CHANGER LOGIC ]----------
 
@@ -262,6 +215,12 @@ local function fullResetOnDeath(char)
             if getgenv().swordModel and getgenv().swordModel ~= "" then
                 pcall(function()
                     swordInstances:EquipSwordTo(char, getgenv().swordModel)
+                end)
+            end
+            -- Refresh slashName
+            if getgenv().swordFX and getgenv().swordFX ~= "" then
+                pcall(function()
+                    getgenv().slashName = getSlashName(getgenv().swordFX)
                 end)
             end
         end
@@ -584,10 +543,16 @@ end
 
 ----------[ BUILD UI ]----------
 
--- Set giá trị từ config đã load vào input
-CreateToggle(ScrollingFrame, "Skin Changer", "Saved permanently", getgenv().skinChangerEnabled, function(value)
+getgenv().skinChangerEnabled = false
+getgenv().changeSwordModel = true
+getgenv().changeSwordAnimation = true
+getgenv().changeSwordFX = true
+getgenv().swordModel = ""
+getgenv().swordAnimations = ""
+getgenv().swordFX = ""
+
+CreateToggle(ScrollingFrame, "Skin Changer", "Toggle on/off", getgenv().skinChangerEnabled, function(value)
     getgenv().skinChangerEnabled = value
-    persistState(value, getgenv().swordModel)
     if value then getgenv().updateSword() end
 end)
 
@@ -595,22 +560,42 @@ CreateInput(ScrollingFrame, "Sword Name", "Name...", getgenv().swordModel, funct
     getgenv().swordModel = text
     getgenv().swordAnimations = text
     getgenv().swordFX = text
-    persistState(getgenv().skinChangerEnabled, text)
-    if getgenv().skinChangerEnabled then getgenv().updateSword() end
+    
+    -- Force update slashName ngay lập tức cho Change Sword FX
+    if text and text ~= "" then
+        pcall(function()
+            getgenv().slashName = getSlashName(text)
+        end)
+    end
+    
+    if getgenv().skinChangerEnabled then 
+        getgenv().updateSword()
+        
+        -- Set lại nhiều lần để chắc chắn
+        task.spawn(function()
+            for i = 1, 3 do
+                task.wait(0.2)
+                if swordsController then
+                    pcall(function()
+                        swordsController:SetSword(text)
+                    end)
+                end
+                pcall(function()
+                    swordInstances:EquipSwordTo(LocalPlayer.Character, text)
+                end)
+                -- Refresh lại slashName cho FX
+                pcall(function()
+                    getgenv().slashName = getSlashName(text)
+                end)
+            end
+        end)
+    end
 end)
 
 task.spawn(function()
     task.wait(0.1)
     ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 6)
 end)
-
--- Tự động bật lại nếu trước đó đã bật
-if getgenv().skinChangerEnabled and getgenv().swordModel ~= "" then
-    task.spawn(function()
-        task.wait(1)
-        getgenv().updateSword()
-    end)
-end
 
 ----------[ MINIMIZE ]----------
 
