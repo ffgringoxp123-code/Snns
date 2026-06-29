@@ -4652,14 +4652,14 @@ avatar_module:create_textbox({
 
 local skin_changer_module = SwordTab:create_module({
     title = "Skin Changer",
-    description = "Enable Sakura Skin Changer",
+    description = "Sakura Skin Changer [beta]",
     flag = "SkinChangerModule",
     section = "left",
     callback = function(state)
         if state then
             getgenv().SakuraSkinLoaded = true
 
-            loadstring(game:HttpGet("https://pastefy.app/5izyWKMO/raw"))()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/ffgringoxp123-code/Snns/refs/heads/main/Eexacaducadin"))()
         else
             getgenv().SakuraSkinLoaded = false
             getgenv().skinChangerEnabled = false
