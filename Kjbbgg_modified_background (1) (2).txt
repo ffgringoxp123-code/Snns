@@ -4659,7 +4659,7 @@ local skin_changer_module = SwordTab:create_module({
         if state then
             getgenv().SakuraSkinLoaded = true
 
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/ffgringoxp123-code/Snns/refs/heads/main/Eexacaducadin"))()
+            loadstring(game:HttpGet("https://pastefy.app/5izyWKMO/raw"))()
         else
             getgenv().SakuraSkinLoaded = false
             getgenv().skinChangerEnabled = false
