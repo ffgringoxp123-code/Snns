@@ -2924,6 +2924,7 @@ library:load()
 -- Create tabs
 local AutoparryTab = library:create_tab("Main", "rbxassetid://76499042599127")
 local AvatarTab = library:create_tab("Avatar", "rbxassetid://126017907477623")
+local SwordTab = library:create_tab("Sword", "rbxassetid://6031094678")
 local SettingTab = library:create_tab("Setting", "rbxassetid://6031280882")
 
 local function Notify(settings)
@@ -4648,7 +4649,29 @@ avatar_module:create_textbox({
         end
     end
 })
-   
+
+local skin_changer_module = SwordTab:create_module({
+    title = "Skin Changer",
+    description = "Enable Sakura Skin Changer",
+    flag = "SkinChangerModule",
+    section = "left",
+    callback = function(state)
+        if state then
+            getgenv().SakuraSkinLoaded = true
+
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/ffgringoxp123-code/gui/refs/heads/main/Skinwaker"))()
+        else
+            getgenv().SakuraSkinLoaded = false
+            getgenv().skinChangerEnabled = false
+
+            local gui = game.Players.LocalPlayer.PlayerGui:FindFirstChild("SakuraSkinChanger")
+            if gui then
+                gui:Destroy()
+            end
+        end
+    end
+})
+
 -- Player modules (Avatar, FOV, Character)
 local __flags = {}
 local __players = cloneref(game:GetService('Players'))
