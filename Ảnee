@@ -1,0 +1,372 @@
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+
+local player = Players.LocalPlayer
+local gravityNormal = workspace.Gravity
+local isRunning = false
+local speed = 375
+local currentTween = nil
+
+local destinations = {
+    CFrame.new(-43.6134491, 62.1137619, 672.744934, -0.999842644, -0.00183729955, 0.017645346, 0, 0.994622767, 0.103564225, -0.0177407414, 0.103547923, -0.994466245),
+    CFrame.new(-60.1504707, 97.4659729, 8767.91406, -0.99889338, 0.000705028593, 0.0470264405, 0, 0.999887645, -0.0149902813, -0.047031723, -0.0149736926, -0.998781145),
+    CFrame.new(-54.331871, -345.398346, 9488.60645, -0.98221302, 0, 0.187770084, 0, 1, 0, -0.187770084, 0, -0.98221302),
+}
+
+local sakuraPink = Color3.fromRGB(255, 182, 193)
+local sakuraDark = Color3.fromRGB(220, 120, 140)
+local sakuraLight = Color3.fromRGB(255, 218, 225)
+
+local farmCycles = 0
+
+local screenGui = Instance.new("ScreenGui", game:GetService("CoreGui"))
+screenGui.Name = "AutoFarmUI"
+screenGui.ResetOnSpawn = false
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+local menu = Instance.new("Frame")
+menu.Size = UDim2.fromOffset(280, 230)
+menu.Position = UDim2.fromOffset((player:GetMouse().ViewSizeX - 280) / 2, (player:GetMouse().ViewSizeY - 230) / 2)
+menu.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+menu.BackgroundTransparency = 0
+menu.BorderSizePixel = 0
+menu.Active = true
+menu.ClipsDescendants = true
+menu.Parent = screenGui
+
+local menuCorner = Instance.new("UICorner")
+menuCorner.CornerRadius = UDim.new(0, 18)
+menuCorner.Parent = menu
+
+local uiStroke = Instance.new("UIStroke")
+uiStroke.Color = sakuraPink
+uiStroke.Thickness = 2.5
+uiStroke.Transparency = 0
+uiStroke.Parent = menu
+
+local expandedSize = UDim2.fromOffset(280, 230)
+local collapsedSize = UDim2.fromOffset(56, 28)
+local isCollapsed = false
+local collapsedPosY = -14
+local lastExpandedPos = menu.Position
+
+local titleFrame = Instance.new("Frame")
+titleFrame.Size = UDim2.new(1, 0, 0, 50)
+titleFrame.Position = UDim2.fromOffset(0, 0)
+titleFrame.BackgroundColor3 = sakuraDark
+titleFrame.BackgroundTransparency = 0.3
+titleFrame.BorderSizePixel = 0
+titleFrame.Parent = menu
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 18)
+titleCorner.Parent = titleFrame
+
+local bottomCover = Instance.new("Frame")
+bottomCover.Size = UDim2.new(1, 0, 0, 18)
+bottomCover.Position = UDim2.fromOffset(0, 32)
+bottomCover.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+bottomCover.BackgroundTransparency = 0
+bottomCover.BorderSizePixel = 0
+bottomCover.ZIndex = 1
+bottomCover.Parent = titleFrame
+
+local sakuraIcon = Instance.new("TextLabel")
+sakuraIcon.Size = UDim2.fromOffset(24, 24)
+sakuraIcon.Position = UDim2.fromOffset(12, 13)
+sakuraIcon.Text = "🌸"
+sakuraIcon.TextSize = 18
+sakuraIcon.BackgroundTransparency = 1
+sakuraIcon.BorderSizePixel = 0
+sakuraIcon.Parent = titleFrame
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, -50, 1, 0)
+titleLabel.Position = UDim2.fromOffset(42, 0)
+titleLabel.Text = "AUTO FARM"
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.TextSize = 18
+titleLabel.Font = Enum.Font.GothamBold
+titleLabel.BackgroundTransparency = 1
+titleLabel.BorderSizePixel = 0
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Parent = titleFrame
+
+local collapseBtn = Instance.new("TextButton")
+collapseBtn.Size = UDim2.fromOffset(28, 28)
+collapseBtn.Position = UDim2.new(1, -36, 0, 10)
+collapseBtn.Text = "−"
+collapseBtn.TextSize = 20
+collapseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+collapseBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 100)
+collapseBtn.BackgroundTransparency = 0
+collapseBtn.BorderSizePixel = 0
+collapseBtn.Font = Enum.Font.GothamBold
+collapseBtn.Parent = menu
+
+local collapseBtnCorner = Instance.new("UICorner")
+collapseBtnCorner.CornerRadius = UDim.new(0, 14)
+collapseBtnCorner.Parent = collapseBtn
+
+local dashBoard = Instance.new("Frame")
+dashBoard.Size = UDim2.new(1, -24, 1, -70)
+dashBoard.Position = UDim2.fromOffset(12, 58)
+dashBoard.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+dashBoard.BackgroundTransparency = 0
+dashBoard.BorderSizePixel = 0
+dashBoard.Parent = menu
+
+local dashCorner = Instance.new("UICorner")
+dashCorner.CornerRadius = UDim.new(0, 12)
+dashCorner.Parent = dashBoard
+
+local statusFrame = Instance.new("Frame")
+statusFrame.Size = UDim2.new(1, -16, 0, 24)
+statusFrame.Position = UDim2.fromOffset(8, 6)
+statusFrame.BackgroundTransparency = 1
+statusFrame.BorderSizePixel = 0
+statusFrame.Parent = dashBoard
+
+local statusDot = Instance.new("Frame")
+statusDot.Size = UDim2.fromOffset(8, 8)
+statusDot.Position = UDim2.fromOffset(0, 8)
+statusDot.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+statusDot.BorderSizePixel = 0
+statusDot.Parent = statusFrame
+
+local statusDotCorner = Instance.new("UICorner")
+statusDotCorner.CornerRadius = UDim.new(0, 4)
+statusDotCorner.Parent = statusDot
+
+local dotTween = TweenService:Create(statusDot, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1), {BackgroundColor3 = sakuraPink})
+dotTween:Play()
+
+local statusLabel = Instance.new("TextLabel")
+statusLabel.Size = UDim2.new(1, -16, 1, 0)
+statusLabel.Position = UDim2.fromOffset(14, 0)
+statusLabel.Text = "Đang dừng"
+statusLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+statusLabel.TextSize = 13
+statusLabel.Font = Enum.Font.Gotham
+statusLabel.BackgroundTransparency = 1
+statusLabel.BorderSizePixel = 0
+statusLabel.TextXAlignment = Enum.TextXAlignment.Left
+statusLabel.Parent = statusFrame
+
+local toggle = Instance.new("TextButton")
+toggle.Size = UDim2.new(1, -16, 0, 44)
+toggle.Position = UDim2.fromOffset(8, 36)
+toggle.Text = "  🚀  BẮT ĐẦU"
+toggle.TextSize = 14
+toggle.TextColor3 = Color3.fromRGB(255, 255, 255)
+toggle.Font = Enum.Font.GothamBold
+toggle.BackgroundColor3 = sakuraDark
+toggle.BackgroundTransparency = 0
+toggle.BorderSizePixel = 0
+toggle.AutoButtonColor = false
+toggle.Parent = dashBoard
+
+local toggleCorner = Instance.new("UICorner")
+toggleCorner.CornerRadius = UDim.new(0, 14)
+toggleCorner.Parent = toggle
+
+local toggleStroke = Instance.new("UIStroke")
+toggleStroke.Color = sakuraPink
+toggleStroke.Thickness = 1.5
+toggleStroke.Transparency = 0.3
+toggleStroke.Parent = toggle
+
+local cycleFrame = Instance.new("Frame")
+cycleFrame.Size = UDim2.new(1, -16, 0, 50)
+cycleFrame.Position = UDim2.fromOffset(8, 88)
+cycleFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 40)
+cycleFrame.BackgroundTransparency = 0
+cycleFrame.BorderSizePixel = 0
+cycleFrame.Parent = dashBoard
+
+local cycleCorner = Instance.new("UICorner")
+cycleCorner.CornerRadius = UDim.new(0, 10)
+cycleCorner.Parent = cycleFrame
+
+local cycleIcon = Instance.new("TextLabel")
+cycleIcon.Size = UDim2.fromOffset(30, 30)
+cycleIcon.Position = UDim2.fromOffset(10, 10)
+cycleIcon.Text = "🔄"
+cycleIcon.TextSize = 20
+cycleIcon.BackgroundTransparency = 1
+cycleIcon.BorderSizePixel = 0
+cycleIcon.Parent = cycleFrame
+
+local cycleLabel = Instance.new("TextLabel")
+cycleLabel.Size = UDim2.new(1, -50, 0, 30)
+cycleLabel.Position = UDim2.fromOffset(44, 10)
+cycleLabel.Text = "Chu kỳ farm: 0"
+cycleLabel.TextColor3 = Color3.fromRGB(150, 200, 255)
+cycleLabel.TextSize = 16
+cycleLabel.Font = Enum.Font.GothamBold
+cycleLabel.BackgroundTransparency = 1
+cycleLabel.BorderSizePixel = 0
+cycleLabel.TextXAlignment = Enum.TextXAlignment.Left
+cycleLabel.Parent = cycleFrame
+
+toggle.MouseEnter:Connect(function()
+    TweenService:Create(toggle, TweenInfo.new(0.2), {BackgroundTransparency = 0.15}):Play()
+end)
+
+toggle.MouseLeave:Connect(function()
+    TweenService:Create(toggle, TweenInfo.new(0.3), {BackgroundTransparency = 0}):Play()
+end)
+
+local function updateCycle()
+    cycleLabel.Text = "Chu kỳ farm: " .. tostring(farmCycles)
+end
+
+local function toggleCollapse()
+    isCollapsed = not isCollapsed
+    if isCollapsed then
+        lastExpandedPos = menu.Position
+        menuCorner.CornerRadius = UDim.new(0, 28)
+        local collapseTween = TweenService:Create(menu, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.In), {Size = collapsedSize, Position = UDim2.fromOffset(menu.Position.X.Offset, collapsedPosY)})
+        collapseTween:Play()
+        collapseBtn.Text = "+"
+        collapseBtn.BackgroundColor3 = sakuraDark
+        local fadeOut = TweenInfo.new(0.2)
+        TweenService:Create(titleLabel, fadeOut, {TextTransparency = 1}):Play()
+        TweenService:Create(dashBoard, fadeOut, {BackgroundTransparency = 1}):Play()
+        TweenService:Create(uiStroke, fadeOut, {Transparency = 0.5}):Play()
+        TweenService:Create(titleFrame, fadeOut, {BackgroundTransparency = 1}):Play()
+        TweenService:Create(bottomCover, fadeOut, {BackgroundTransparency = 1}):Play()
+    else
+        menuCorner.CornerRadius = UDim.new(0, 18)
+        local expandTween = TweenService:Create(menu, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = expandedSize, Position = lastExpandedPos})
+        expandTween:Play()
+        collapseBtn.Text = "−"
+        collapseBtn.BackgroundColor3 = Color3.fromRGB(80, 80, 100)
+        local fadeIn = TweenInfo.new(0.3)
+        TweenService:Create(titleLabel, fadeIn, {TextTransparency = 0}):Play()
+        TweenService:Create(dashBoard, fadeIn, {BackgroundTransparency = 0}):Play()
+        TweenService:Create(uiStroke, fadeIn, {Transparency = 0}):Play()
+        TweenService:Create(titleFrame, fadeIn, {BackgroundTransparency = 0.3}):Play()
+        TweenService:Create(bottomCover, fadeIn, {BackgroundTransparency = 0}):Play()
+    end
+end
+
+collapseBtn.MouseButton1Click:Connect(toggleCollapse)
+
+local function moveTo(targetCFrame, setGravity)
+    local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+    local distance = (root.Position - targetCFrame.Position).Magnitude
+    local duration = distance / speed
+    currentTween = TweenService:Create(root, TweenInfo.new(duration, Enum.EasingStyle.Linear), {CFrame = targetCFrame})
+    currentTween:Play()
+    local reached = false
+    currentTween.Completed:Connect(function()
+        reached = true
+        if targetCFrame == destinations[#destinations] then
+            farmCycles = farmCycles + 1
+            updateCycle()
+        end
+    end)
+    if setGravity then
+        workspace.Gravity = gravityNormal
+    else
+        workspace.Gravity = 0
+    end
+    while not reached and isRunning do
+        RunService.Heartbeat:Wait()
+    end
+end
+
+task.spawn(function()
+    while true do
+        task.wait(10)
+        if isRunning then
+            VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.K, false, game)
+            VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.K, false, game)
+        end
+    end
+end)
+
+local function autoFarmLoop()
+    while isRunning do
+        local char = player.Character or player.CharacterAdded:Wait()
+        local root = char:WaitForChild("HumanoidRootPart", 5)
+        if not root then return end
+        for i, cf in ipairs(destinations) do
+            if not isRunning then return end
+            moveTo(cf, i == #destinations)
+        end
+        repeat
+            wait(1)
+        until player.CharacterAdded:Wait()
+    end
+end
+
+toggle.MouseButton1Click:Connect(function()
+    isRunning = not isRunning
+    if not isRunning then
+        toggle.Text = "  🚀  BẮT ĐẦU"
+        statusLabel.Text = "Đang dừng"
+        statusLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+        workspace.Gravity = gravityNormal
+        if currentTween then currentTween:Cancel() end
+        TweenService:Create(toggle, TweenInfo.new(0.3), {BackgroundColor3 = sakuraDark}):Play()
+    else
+        toggle.Text = "  ⏹  DỪNG LẠI"
+        statusLabel.Text = "Đang farm ✨"
+        statusLabel.TextColor3 = sakuraPink
+        TweenService:Create(toggle, TweenInfo.new(0.3), {BackgroundColor3 = Color3.fromRGB(180, 60, 80)}):Play()
+        task.spawn(autoFarmLoop)
+    end
+end)
+
+player.CharacterAdded:Connect(function()
+    if isRunning then
+        local char = player.Character or player.CharacterAdded:Wait()
+        local root = char:WaitForChild("HumanoidRootPart", 5)
+        if root then
+            wait(1)
+            moveTo(destinations[1], false)
+            task.spawn(autoFarmLoop)
+        end
+    end
+end)
+
+local dragging = false
+local dragStart = Vector2.new(0, 0)
+local menuStartPos = UDim2.new()
+
+menu.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        local target = input.Target
+        if target == titleFrame or target:IsDescendantOf(titleFrame) or target == menu or target == menuCorner or target == uiStroke or target == bottomCover or target:IsDescendantOf(bottomCover) then
+            dragging = true
+            dragStart = input.Position
+            menuStartPos = menu.Position
+        end
+    end
+end)
+
+menu.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = false
+    end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+    if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+        local delta = input.Position - dragStart
+        local newX = menuStartPos.X.Offset + delta.X
+        local newY = menuStartPos.Y.Offset + delta.Y
+        local viewSize = player:GetMouse().ViewSize
+        newX = math.clamp(newX, 0, viewSize.X - menu.AbsoluteSize.X)
+        newY = math.clamp(newY, 0, viewSize.Y - menu.AbsoluteSize.Y)
+        menu.Position = UDim2.fromOffset(newX, newY)
+        if not isCollapsed then lastExpandedPos = menu.Position end
+    end
+end)
+
+updateCycle()
