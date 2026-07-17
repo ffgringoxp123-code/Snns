@@ -1,0 +1,687 @@
+local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
+
+local Window = WindUI:CreateWindow({
+    Title = "Argon Hub X",
+    Icon = "rbxassetid://119371425382054",
+    Author = "by AgentX77",
+    Folder = "Arggon Hub X",
+    Size = UDim2.fromOffset(670, 457),
+    Theme = "Dark",
+    User = {
+        Enabled = true,
+        Anonymous = false,
+        Callback = function()
+        end
+    },
+    Background = "rbxassetid://94804555433441",
+    HideSearchBar = false,
+    SideBarWidth = 200,
+})
+
+Window:EditOpenButton({
+    Title = "Argon Hub X",
+    Icon = "rbxassetid://119371425382054",
+    Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(150, 0, 0))
+    })
+})
+
+Window:Tag({
+    Title = "v4.6.2",
+    Color = Color3.fromRGB(255, 0, 0),
+})
+
+local Tabs = {
+    HomeSec = Window:Section({Title = "Home", Opened = true}),
+    MainSec = Window:Section({Title = "Main", Opened = true}),
+    SettingsSec = Window:Section({Title = "Settings", Opened = true})
+}
+
+local TabHandles = {
+    HomeTab = Tabs.HomeSec:Tab({Title = "Home", Icon = "house"}),
+    MainTab = Tabs.MainSec:Tab({Title = "Main", Icon = "wrench"}),
+    BlatantTab = Tabs.MainSec:Tab({Title = "Blatant", Icon = "swords"}),
+    OthersTab = Tabs.MainSec:Tab({Title = "Others", Icon = "cpu"}),
+    ShopTab = Tabs.MainSec:Tab({Title = "Shop", Icon = "shopping-bag"}),
+    SettingsTab = Tabs.SettingsSec:Tab({Title = "Settings", Icon = "bolt"})
+}
+
+TabHandles.HomeTab:Paragraph({
+    Title = "Hello, sinfonnyx",
+    Desc = [[
+Argon Hub X embodies the spirit of a pitbull: fearless, powerful, and unbreakable.
+
+In Blade Ball, it unleashes unmatched strength with highly advanced interception methods that push performance to the next level.
+
+With the latest update, the AI system was added, ensuring an improved experience in competitions, clashes, and parries.
+]],
+    Image = "rbxassetid://119371425382054",
+    ImageSize = 34,
+    Color = Color3.fromRGB(28, 28, 28)
+})
+
+TabHandles.HomeTab:Section({
+    Title = "Official Site"
+})
+
+TabHandles.HomeTab:Button({
+    Title = "Copy Official Site",
+    Desc = "Copy the official Argon Hub X website to clipboard.",
+    Icon = "mouse-pointer-click",
+    Callback = function()
+        local Website = "https://argon-hub-x.vercel.app/"
+
+        if setclipboard then
+            setclipboard(Website)
+        elseif toclipboard then
+            toclipboard(Website)
+        end
+
+        WindUI:Notify({
+            Title = "Copied!",
+            Content = "Official site copied to clipboard.",
+            Icon = "check",
+            Duration = 3
+        })
+    end
+})
+
+TabHandles.MainTab:Section({
+    Title = "Emotes"
+})
+
+local SelectedEmote = ""
+
+TabHandles.MainTab:Dropdown({
+    Title = "Emotes",
+    Desc = "Select your favorite emote.",
+    Values = {"Wave","Dance","Laugh","Point","Cheer"},
+    Value = "",
+    Callback = function(Value)
+        SelectedEmote = Value
+    end
+})
+
+TabHandles.MainTab:Button({
+    Title = "Refresh Emotes",
+    Desc = "Puts all emotes in the dropdown.",
+    Icon = "sparkles",
+    Callback = function()
+        WindUI:Notify({
+            Title = "Success",
+            Content = "Emotes refreshed.",
+            Duration = 3
+        })
+    end
+})
+
+TabHandles.MainTab:Toggle({
+    Title = "Play Emote",
+    Desc = "Plays the selected emote.",
+    Value = false,
+    Callback = function(Value)
+
+    end
+})
+
+TabHandles.MainTab:Toggle({
+    Title = "Play Emote by Win",
+    Desc = "Plays the selected emote when you win.",
+    Value = false,
+    Callback = function(Value)
+
+    end
+})
+
+TabHandles.MainTab:Section({
+    Title = "ESP Lines"
+})
+
+TabHandles.MainTab:Toggle({
+    Title = "ESP Enabled",
+    Desc = "Activates ESP for all players in the game.",
+    Value = false,
+    Callback = function(Value)
+
+    end
+})
+
+TabHandles.MainTab:Toggle({
+    Title = "ESP Tracers",
+    Value = false,
+    Callback = function(Value)
+
+    end
+})
+
+TabHandles.MainTab:Toggle({
+    Title = "ESP Names",
+    Value = false,
+    Callback = function(Value)
+
+    end
+})
+
+TabHandles.MainTab:Toggle({
+    Title = "ESP Boxes",
+    Value = false,
+    Callback = function(Value)
+
+    end
+})
+
+TabHandles.MainTab:Colorpicker({
+    Title = "ESP Color",
+    Default = Color3.fromRGB(255,0,0),
+    Callback = function(Color)
+
+    end
+})
+
+TabHandles.MainTab:Section({
+    Title = "Auto Play"
+})
+
+TabHandles.MainTab:Toggle({
+    Title = "Auto Play",
+    Desc = "Auto Play will play the games for you.",
+    Value = false,
+    Callback = function(Value)
+
+    end
+})
+
+TabHandles.MainTab:Toggle({
+    Title = "Stay Still Random",
+    Desc = "Stops autoplay at a random time.",
+    Value = false,
+    Callback = function(Value)
+
+    end
+})
+
+TabHandles.MainTab:Toggle({
+    Title = "Auto Rewards",
+    Desc = "Claim your rewards and codes.",
+    Value = false,
+    Callback = function(Value)
+
+    end
+})
+
+TabHandles.MainTab:Toggle({
+    Title = "Auto Jump",
+    Desc = "Automatically jumps at a random moment.",
+    Value = false,
+    Callback = function(Value)
+
+    end
+})
+
+TabHandles.BlatantTab:Section({
+    Title = "Blatant Options"
+})
+
+TabHandles.BlatantTab:Dropdown({
+    Title = "Curve Type",
+    Desc = "Select where you want to direct the ball.",
+    Values = {"Camera","Mouse","Random"},
+    Value = "Camera",
+    Callback = function(Value)
+
+    end
+})
+
+TabHandles.BlatantTab:Toggle({
+    Title = "Random Curve",
+    Desc = "Random select a curve when targeted.",
+    Value = false,
+    Callback = function(Value)
+
+    end
+})
+
+TabHandles.BlatantTab:Toggle({
+    Title = "Manual Spam",
+    Value = false,
+    Callback = function(Value)
+
+    end
+})
+
+TabHandles.BlatantTab:Toggle({
+    Title = "Triggerbot",
+    Desc = "Activate a block when you are targeted.",
+    Value = false,
+    Callback = function(Value)
+
+    end
+})
+
+TabHandles.BlatantTab:Section({
+    Title = "Detections"
+})
+
+TabHandles.BlatantTab:Toggle({
+    Title = "Infinity Detection",
+    Desc = "Avoid accidental crashes by having the skill.",
+    Value = false,
+    Callback = function(Value)
+
+    end
+})
+
+TabHandles.BlatantTab:Toggle({
+    Title = "Death Slash Detection",
+    Desc = "Generates the shot when activating the ability.",
+    Value = false,
+    Callback = function(Value)
+
+    end
+})
+
+TabHandles.BlatantTab:Toggle({
+    Title = "Time Hole Detection",
+    Desc = "Avoid falling when someone has that skill.",
+    Value = false,
+    Callback = function(Value)
+
+    end
+})
+
+TabHandles.BlatantTab:Toggle({
+    Title = "Slash of Fury Detection",
+    Desc = "Generates exact locks for you.",
+    Value = false,
+    Callback = function(Value)
+
+    end
+})
+
+TabHandles.BlatantTab:Section({
+    Title = "Protections"
+})
+
+TabHandles.BlatantTab:Toggle({
+    Title = "Auto Dribble Attack",
+    Desc = "Use Dribble as a blocking method.",
+    Value = false,
+    Callback = function(Value)
+
+    end
+})
+
+TabHandles.BlatantTab:Toggle({
+    Title = "Anti Phantom Attack",
+    Desc = "Prevents your speed from being reduced by the attack.",
+    Value = false,
+    Callback = function(Value)
+
+    end
+})
+
+TabHandles.BlatantTab:Toggle({
+    Title = "Cooldown Protection",
+    Desc = "Use your ability as protection in case of an accidental block.",
+    Value = false,
+    Callback = function(Value)
+
+    end
+})
+
+TabHandles.BlatantTab:Section({
+    Title = "Skills"
+})
+
+TabHandles.BlatantTab:Toggle({
+    Title = "Auto Ability",
+    Desc = "Use your ability as a block.",
+    Value = false,
+    Callback = function(Value)
+
+    end
+})
+
+TabHandles.BlatantTab:Section({
+    Title = "Auto Parry Lobby"
+})
+
+TabHandles.BlatantTab:Toggle({
+    Title = "Auto Parry",
+    Desc = "Automatically parry the ball in the lobby.",
+    Value = false,
+    Callback = function(Value)
+
+    end
+})
+
+TabHandles.BlatantTab:Slider({
+    Title = "Parry Accuracy",
+    Desc = "Change the parry prediction.",
+    Value = {
+        Min = 0,
+        Max = 100,
+        Default = 100,
+    },
+    Callback = function(Value)
+
+    end
+})
+
+TabHandles.BlatantTab:Slider({
+    Title = "Parry Distance",
+    Desc = "Maximum distance to parry.",
+    Value = {
+        Min = 5,
+        Max = 50,
+        Default = 20,
+    },
+    Callback = function(Value)
+
+    end
+})
+
+TabHandles.OthersTab:Toggle({
+    Title = "Semi Immortal",
+    Desc = "Prevents the ball from killing you.",
+    Value = false,
+    Callback = function(Value)
+
+    end
+})
+
+TabHandles.OthersTab:Dropdown({
+    Title = "Settings",
+    Desc = "Select the Semi-Immortal configuration.",
+    Values = {
+        "Walkable",
+        "Collision",
+        "PlatformStand"
+    },
+    Value = "Walkable",
+    Callback = function(Value)
+
+    end
+})
+
+TabHandles.OthersTab:Section({
+    Title = "Player Options"
+})
+
+TabHandles.OthersTab:Slider({
+    Title = "Speed",
+    Desc = "Choose the speed of your character.",
+    Value = {
+        Min = 16,
+        Max = 550,
+        Default = 550
+    },
+    Callback = function(Value)
+
+    end
+})
+
+TabHandles.OthersTab:Slider({
+    Title = "Jump Power",
+    Desc = "Choose the jump power of your character.",
+    Value = {
+        Min = 50,
+        Max = 120,
+        Default = 120
+    },
+    Callback = function(Value)
+
+    end
+})
+
+TabHandles.OthersTab:Toggle({
+    Title = "Enable Speed and Jump",
+    Value = false,
+    Callback = function(Value)
+
+    end
+})
+
+TabHandles.OthersTab:Section({
+    Title = "Player Effects"
+})
+
+TabHandles.OthersTab:Toggle({
+    Title = "Player Effects",
+    Desc = "Activates korblox and headless effects.",
+    Value = false,
+    Callback = function(Value)
+
+    end
+})
+
+TabHandles.OthersTab:Toggle({
+    Title = "Ability ESP",
+    Desc = "Displays the name of the player's skills.",
+    Value = false,
+    Callback = function(Value)
+
+    end
+})
+
+TabHandles.OthersTab:Toggle({
+    Title = "No Render",
+    Desc = "Optimize the game without damaging the graphics.",
+    Value = false,
+    Callback = function(Value)
+
+    end
+})
+
+local Shop = TabHandles.ShopTab
+
+Shop:Section({
+    Title = "Sword Box"
+})
+
+Shop:Button({
+    Title = "Buy Sword Box",
+    Desc = "Buy a box of swords.",
+    Icon = "sparkles",
+    Callback = function()
+
+    end
+})
+
+Shop:Toggle({
+    Title = "Auto Buy Sword Box",
+    Desc = "Automatically buys a box of swords.",
+    Value = false,
+    Callback = function(Value)
+
+    end
+})
+
+Shop:Button({
+    Title = "Buy Explosion Box",
+    Desc = "Buy a box of explosions.",
+    Icon = "sparkles",
+    Callback = function()
+
+    end
+})
+
+Shop:Toggle({
+    Title = "Auto Buy Explosion Box",
+    Desc = "Automatically buys a box of explosions.",
+    Value = false,
+    Callback = function(Value)
+
+    end
+})
+
+Shop:Section({
+    Title = "Premium Box"
+})
+
+Shop:Button({
+    Title = "Buy Sword Premium Box",
+    Desc = "Buy a premium box of swords.",
+    Icon = "sparkles",
+    Callback = function()
+
+    end
+})
+
+Shop:Toggle({
+    Title = "Auto Buy Sword Premium Box",
+    Desc = "Automatically buys a premium box of swords.",
+    Value = false,
+    Callback = function(Value)
+
+    end
+})
+
+Shop:Button({
+    Title = "Buy Explosion Premium Box",
+    Desc = "Buy a premium box of explosions.",
+    Icon = "sparkles",
+    Callback = function()
+
+    end
+})
+
+Shop:Toggle({
+    Title = "Auto Buy Explosion Premium Box",
+    Desc = "Automatically buys a premium box of explosions.",
+    Value = false,
+    Callback = function(Value)
+
+    end
+})
+
+local Settings = TabHandles.SettingsTab
+
+Settings:Section({
+    Title = "Update Info"
+})
+
+Settings:Button({
+    Title = "Join Discord",
+    Desc = "Join the official Argon Hub X Discord server.",
+    Icon = "copy",
+    Callback = function()
+        local Invite = "https://discord.gg/yourinvite"
+
+        if setclipboard then
+            setclipboard(Invite)
+        elseif toclipboard then
+            toclipboard(Invite)
+        end
+
+        WindUI:Notify({
+            Title = "Copied",
+            Content = "Discord invite copied to clipboard.",
+            Icon = "check",
+            Duration = 3
+        })
+    end
+})
+
+Settings:Button({
+    Title = "Update Information",
+    Desc = "View the latest update information.",
+    Icon = "sparkles",
+    Callback = function()
+
+    end
+})
+
+Settings:Section({
+    Title = "Products"
+})
+
+Settings:Keybind({
+    Title = "Keybind to Toggle UI",
+    Desc = "Press the key to minimize the interface.",
+    Value = "G",
+    Callback = function(Key)
+
+    end
+})
+
+Settings:Button({
+    Title = "Change Background",
+    Desc = "Set your own background.",
+    Icon = "image",
+    Callback = function()
+
+    end
+})
+
+Settings:Section({
+    Title = "Personal Detector"
+})
+
+Settings:Toggle({
+    Title = "Personal Detector",
+    Desc = "Detects when moderators join the game.",
+    Value = false,
+    Callback = function(Value)
+
+    end
+})
+
+Settings:Toggle({
+    Title = "Anti Scaming",
+    Desc = "Prevents you from being scammed by scripts.",
+    Value = false,
+    Callback = function(Value)
+
+    end
+})
+
+Settings:Dropdown({
+    Title = "Method Prevention",
+    Desc = "Choose your prevention method.",
+    Values = {
+        "Notify",
+        "Kick",
+        "Server Hop"
+    },
+    Value = "Notify",
+    Callback = function(Value)
+
+    end
+})
+
+Settings:Section({
+    Title = "Reports Bugs"
+})
+
+Settings:Button({
+    Title = "Report a Bug",
+    Desc = "Send a bug report.",
+    Icon = "bug",
+    Callback = function()
+
+    end
+})
+
+Settings:Button({
+    Title = "Copy Discord",
+    Desc = "Copy Discord server link.",
+    Icon = "copy",
+    Callback = function()
+        local Invite = "https://discord.gg/yourinvite"
+
+        if setclipboard then
+            setclipboard(Invite)
+        elseif toclipboard then
+            toclipboard(Invite)
+        end
+
+        WindUI:Notify({
+            Title = "Copied",
+            Content = "Discord link copied.",
+            Icon = "check",
+            Duration = 3
+        })
+    end
+})
