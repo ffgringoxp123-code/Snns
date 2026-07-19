@@ -22,7 +22,6 @@ local SAKURA_DARK = Color3.fromRGB(199, 21, 133)
 local SAKURA_LIGHT = Color3.fromRGB(255, 154, 200)
 local SAKURA_BRIGHT = Color3.fromRGB(255, 90, 165)
 
--- Dark Plum colors
 local DARK_PLUM = Color3.fromRGB(20, 0, 15)
 local DARK_PLUM_TOPBAR = Color3.fromRGB(20, 0, 15)
 local DARK_PLUM_OVERLAP = Color3.fromRGB(20, 0, 15)
@@ -290,19 +289,8 @@ function Library:CreateWindow(config)
         if not saved then return false end
         for flag, value in pairs(saved) do
             self.Flags[flag] = value
-            local setter = self._FlagSetters and self._FlagSetters[flag]
-            if setter then setter(value) end
         end
         return true
-    end
-    Window._FlagSetters = {}
-
-    local function registerFlag(win, flag, setter, default)
-        if not flag then return end
-        win._FlagSetters[flag] = setter
-        if win.Flags[flag] == nil then
-            win.Flags[flag] = default
-        end
     end
 
     -- ===== ALLUSIVE-COMPAT: create_tab / CreateTab =====
@@ -316,9 +304,6 @@ function Library:CreateWindow(config)
         local Tab = {}
         local tabName = config.Title or "Tab"
         local imageId = config.Icon or "rbxassetid://76499042599127"
-
-        -- Biến lưu section hiện tại cho Tab
-        local _currentSection = "Left"
 
         local TabBtn = New("TextButton", {
             Name = tabName .. "_Tab",
@@ -429,70 +414,17 @@ function Library:CreateWindow(config)
             UpdateTabVisuals(true)
         end
 
-        -- ===== HÀM LẤY COLUMN THEO SECTION =====
-        local function GetColumn(section)
-            if section and tostring(section):lower() == "right" then
-                return RightCol
-            end
-            return LeftCol
-        end
+        -- Biến section hiện tại
+        local _currentSection = "Left"
 
-        -- ===== TAB: SECTION =====
         function Tab:section(name)
             _currentSection = name or "Left"
             return self
         end
 
-        -- ===== ALLUSIVE-COMPAT: Widget helpers =====
-        -- Các helper này DIRECTLY tạo module (không qua section trung gian)
-
-        function Tab:create_toggle(text, callback)
-            local col = GetColumn(_currentSection)
-            local mod = self:_createModuleInColumn(col, text)
-            return mod:CreateToggle({Text = text, Callback = callback})
-        end
-
-        function Tab:create_button(text, callback)
-            local col = GetColumn(_currentSection)
-            local mod = self:_createModuleInColumn(col, text)
-            return mod:CreateButton({Text = text, Callback = callback})
-        end
-
-        function Tab:create_slider(text, min, max, default, callback)
-            local col = GetColumn(_currentSection)
-            local mod = self:_createModuleInColumn(col, text)
-            return mod:CreateSlider({Text = text, Min = min, Max = max, Default = default, Callback = callback})
-        end
-
-        function Tab:create_dropdown(text, options, default, callback)
-            local col = GetColumn(_currentSection)
-            local mod = self:_createModuleInColumn(col, text)
-            return mod:CreateDropdown({Text = text, Options = options, Default = default, Callback = callback})
-        end
-
-        function Tab:create_textbox(text, placeholder, default, callback)
-            local col = GetColumn(_currentSection)
-            local mod = self:_createModuleInColumn(col, text)
-            return mod:CreateTextbox({Text = text, Placeholder = placeholder, Default = default, Callback = callback})
-        end
-
-        function Tab:create_keybind(text, default, callback)
-            local col = GetColumn(_currentSection)
-            local mod = self:_createModuleInColumn(col, text)
-            return mod:CreateKeybind({Text = text, Default = default, Callback = callback})
-        end
-
-        -- CamelCase aliases
-        Tab.CreateToggle = Tab.create_toggle
-        Tab.CreateButton = Tab.create_button
-        Tab.CreateSlider = Tab.create_slider
-        Tab.CreateDropdown = Tab.create_dropdown
-        Tab.CreateTextbox = Tab.create_textbox
-        Tab.CreateKeybind = Tab.create_keybind
-
-        -- ===== Internal: tạo module trực tiếp trong 1 column cụ thể =====
-        function Tab:_createModuleInColumn(parent, title)
-            local HEADER_H, DIVIDER_H = s(50), s(9)
+        -- ===== Hàm tạo module ở 1 column =====
+        local function createModuleInColumn(parent, title, description)
+            local HEADER_H = s(50)
             local MODULE_W = 0.92
 
             local ModuleFrame = New("Frame", {
@@ -521,7 +453,20 @@ function Library:CreateWindow(config)
                 TextXAlignment = Enum.TextXAlignment.Left,
             }, Header)
 
-            -- Toggle switch (module header)
+            if description and description ~= "" then
+                New("TextLabel", {
+                    Text = " " .. description,
+                    Size = UDim2.new(0, s(150), 0, s(15)),
+                    Position = UDim2.new(0, s(10), 0, s(26)),
+                    TextColor3 = PrimaryColor,
+                    Font = Enum.Font.Gotham,
+                    TextSize = s(10),
+                    BackgroundTransparency = 1,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                }, Header)
+            end
+
+            -- Toggle switch (chỉ để trang trí)
             local ToggleBg = New("Frame", {
                 Size = UDim2.new(0, s(34), 0, s(18)),
                 Position = UDim2.new(1, -s(46), 0, s(11)),
@@ -547,7 +492,7 @@ function Library:CreateWindow(config)
             local Options = New("Frame", {
                 Name = "Options",
                 Size = UDim2.new(1, -s(20), 0, 0),
-                Position = UDim2.new(0, s(10), 0, HEADER_H + DIVIDER_H),
+                Position = UDim2.new(0, s(10), 0, HEADER_H + s(9)),
                 BackgroundTransparency = 1,
                 AutomaticSize = Enum.AutomaticSize.Y,
                 ClipsDescendants = false,
@@ -569,51 +514,55 @@ function Library:CreateWindow(config)
                 Options = Options,
                 Canvas = Canvas,
                 Enabled = false,
-                _callback = nil,
+                ModuleFrame = ModuleFrame,
+                ToggleDot = ToggleDot,
+                ToggleBg = ToggleBg,
+                HEADER_H = HEADER_H,
+                MODULE_W = MODULE_W,
+                OptLayout = OptLayout,
+                PrimaryColor = PrimaryColor,
             }
 
-            local function recalc(animate)
+            -- Animation functions
+            function ModuleObj:recalc(animate)
                 local target
-                if ModuleObj.Enabled then
-                    target = HEADER_H + DIVIDER_H + OptLayout.AbsoluteContentSize.Y + s(6)
+                if self.Enabled then
+                    target = self.HEADER_H + s(9) + self.OptLayout.AbsoluteContentSize.Y + s(6)
                 else
-                    target = HEADER_H
+                    target = self.HEADER_H
                 end
                 if animate then
-                    Tween(ModuleFrame, {Size = UDim2.new(MODULE_W, 0, 0, target)}, 0.3, Enum.EasingStyle.Quart)
+                    Tween(self.ModuleFrame, {Size = UDim2.new(self.MODULE_W, 0, 0, target)}, 0.3, Enum.EasingStyle.Quart)
                 else
-                    ModuleFrame.Size = UDim2.new(MODULE_W, 0, 0, target)
+                    self.ModuleFrame.Size = UDim2.new(self.MODULE_W, 0, 0, target)
                 end
             end
 
-            local function updateCanvas(show, animate)
-                local targetHeight = show and OptLayout.AbsoluteContentSize.Y or 0
+            function ModuleObj:updateCanvas(show, animate)
+                local targetHeight = show and self.OptLayout.AbsoluteContentSize.Y or 0
                 if animate then
-                    Tween(Canvas, {Size = UDim2.new(1, 0, 0, targetHeight)}, 0.25, Enum.EasingStyle.Quart)
+                    Tween(self.Canvas, {Size = UDim2.new(1, 0, 0, targetHeight)}, 0.25, Enum.EasingStyle.Quart)
                 else
-                    Canvas.Size = UDim2.new(1, 0, 0, targetHeight)
+                    self.Canvas.Size = UDim2.new(1, 0, 0, targetHeight)
                 end
             end
 
             OptLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
                 if ModuleObj.Enabled then
-                    updateCanvas(true, true)
+                    ModuleObj:updateCanvas(true, true)
                 end
-                recalc(ModuleObj.Enabled)
+                ModuleObj:recalc(ModuleObj.Enabled)
             end)
 
-            local function setEnabled(state, fromUser)
-                ModuleObj.Enabled = state
-
-                Tween(ToggleDot, {
+            function ModuleObj:setEnabled(state)
+                self.Enabled = state
+                Tween(self.ToggleDot, {
                     Position = state and UDim2.new(0, s(18), 0.5, -s(7)) or UDim2.new(0, s(2), 0.5, -s(7)),
-                    BackgroundColor3 = state and PrimaryColor or Color3.fromRGB(180, 100, 150),
+                    BackgroundColor3 = state and self.PrimaryColor or Color3.fromRGB(180, 100, 150),
                 }, 0.2)
-
-                updateCanvas(state, true)
-                recalc(true)
+                self:updateCanvas(state, true)
+                self:recalc(true)
             end
-            ModuleObj._SetEnabled = setEnabled
 
             local ClickArea = New("TextButton", {
                 Size = UDim2.new(1, -s(90), 0, HEADER_H),
@@ -622,11 +571,11 @@ function Library:CreateWindow(config)
                 ZIndex = 2,
             }, Header)
             ClickArea.MouseButton1Click:Connect(function()
-                setEnabled(not ModuleObj.Enabled, true)
+                ModuleObj:setEnabled(not ModuleObj.Enabled)
             end)
             ToggleBg.InputBegan:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    setEnabled(not ModuleObj.Enabled, true)
+                    ModuleObj:setEnabled(not ModuleObj.Enabled)
                 end
             end)
 
@@ -634,10 +583,56 @@ function Library:CreateWindow(config)
             return ModuleObj
         end
 
-        -- ===== Public CreateModule (giữ tương thích cũ) =====
+        -- ===== ALLUSIVE HELPERS =====
+        function Tab:create_toggle(text, callback)
+            local col = _currentSection and (tostring(_currentSection):lower() == "right" and RightCol or LeftCol) or LeftCol
+            local mod = createModuleInColumn(col, text, "")
+            return mod:CreateToggle({Text = text, Callback = callback})
+        end
+
+        function Tab:create_button(text, callback)
+            local col = _currentSection and (tostring(_currentSection):lower() == "right" and RightCol or LeftCol) or LeftCol
+            local mod = createModuleInColumn(col, text, "")
+            return mod:CreateButton({Text = text, Callback = callback})
+        end
+
+        function Tab:create_slider(text, min, max, default, callback)
+            local col = _currentSection and (tostring(_currentSection):lower() == "right" and RightCol or LeftCol) or LeftCol
+            local mod = createModuleInColumn(col, text, "")
+            return mod:CreateSlider({Text = text, Min = min, Max = max, Default = default, Callback = callback})
+        end
+
+        function Tab:create_dropdown(text, options, default, callback)
+            local col = _currentSection and (tostring(_currentSection):lower() == "right" and RightCol or LeftCol) or LeftCol
+            local mod = createModuleInColumn(col, text, "")
+            return mod:CreateDropdown({Text = text, Options = options, Default = default, Callback = callback})
+        end
+
+        function Tab:create_textbox(text, placeholder, default, callback)
+            local col = _currentSection and (tostring(_currentSection):lower() == "right" and RightCol or LeftCol) or LeftCol
+            local mod = createModuleInColumn(col, text, "")
+            return mod:CreateTextbox({Text = text, Placeholder = placeholder, Default = default, Callback = callback})
+        end
+
+        function Tab:create_keybind(text, default, callback)
+            local col = _currentSection and (tostring(_currentSection):lower() == "right" and RightCol or LeftCol) or LeftCol
+            local mod = createModuleInColumn(col, text, "")
+            return mod:CreateKeybind({Text = text, Default = default, Callback = callback})
+        end
+
+        -- CamelCase
+        Tab.CreateToggle = Tab.create_toggle
+        Tab.CreateButton = Tab.create_button
+        Tab.CreateSlider = Tab.create_slider
+        Tab.CreateDropdown = Tab.create_dropdown
+        Tab.CreateTextbox = Tab.create_textbox
+        Tab.CreateKeybind = Tab.create_keybind
+
+        -- Module cũ
         function Tab:CreateModule(mConfig)
             mConfig = mConfig or {}
-            local col = GetColumn(mConfig.Section or _currentSection)
+            local section = mConfig.Section or _currentSection
+            local col = section and (tostring(section):lower() == "right" and RightCol or LeftCol) or LeftCol
             local HEADER_H, DIVIDER_H = s(50), s(9)
             local MODULE_W = 0.92
             local flag = mConfig.Flag
@@ -727,55 +722,61 @@ function Library:CreateWindow(config)
                 Canvas = Canvas,
                 Enabled = false,
                 _callback = mConfig.Callback,
+                ModuleFrame = ModuleFrame,
+                ToggleDot = ToggleDot,
+                ToggleBg = ToggleBg,
+                HEADER_H = HEADER_H,
+                MODULE_W = MODULE_W,
+                DIVIDER_H = DIVIDER_H,
+                OptLayout = OptLayout,
+                PrimaryColor = PrimaryColor,
+                Window = Window,
+                Flag = flag,
             }
 
-            local function recalc(animate)
+            function ModuleObj:recalc(animate)
                 local target
-                if ModuleObj.Enabled then
-                    target = HEADER_H + DIVIDER_H + OptLayout.AbsoluteContentSize.Y + s(6)
+                if self.Enabled then
+                    target = self.HEADER_H + self.DIVIDER_H + self.OptLayout.AbsoluteContentSize.Y + s(6)
                 else
-                    target = HEADER_H
+                    target = self.HEADER_H
                 end
                 if animate then
-                    Tween(ModuleFrame, {Size = UDim2.new(MODULE_W, 0, 0, target)}, 0.3, Enum.EasingStyle.Quart)
+                    Tween(self.ModuleFrame, {Size = UDim2.new(self.MODULE_W, 0, 0, target)}, 0.3, Enum.EasingStyle.Quart)
                 else
-                    ModuleFrame.Size = UDim2.new(MODULE_W, 0, 0, target)
+                    self.ModuleFrame.Size = UDim2.new(self.MODULE_W, 0, 0, target)
                 end
             end
 
-            local function updateCanvas(show, animate)
-                local targetHeight = show and OptLayout.AbsoluteContentSize.Y or 0
+            function ModuleObj:updateCanvas(show, animate)
+                local targetHeight = show and self.OptLayout.AbsoluteContentSize.Y or 0
                 if animate then
-                    Tween(Canvas, {Size = UDim2.new(1, 0, 0, targetHeight)}, 0.25, Enum.EasingStyle.Quart)
+                    Tween(self.Canvas, {Size = UDim2.new(1, 0, 0, targetHeight)}, 0.25, Enum.EasingStyle.Quart)
                 else
-                    Canvas.Size = UDim2.new(1, 0, 0, targetHeight)
+                    self.Canvas.Size = UDim2.new(1, 0, 0, targetHeight)
                 end
             end
 
             OptLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
                 if ModuleObj.Enabled then
-                    updateCanvas(true, true)
+                    ModuleObj:updateCanvas(true, true)
                 end
-                recalc(ModuleObj.Enabled)
+                ModuleObj:recalc(ModuleObj.Enabled)
             end)
 
-            local function setEnabled(state, fromUser)
-                ModuleObj.Enabled = state
-
-                Tween(ToggleDot, {
+            function ModuleObj:setEnabled(state, fromUser)
+                self.Enabled = state
+                Tween(self.ToggleDot, {
                     Position = state and UDim2.new(0, s(18), 0.5, -s(7)) or UDim2.new(0, s(2), 0.5, -s(7)),
-                    BackgroundColor3 = state and PrimaryColor or Color3.fromRGB(180, 100, 150),
+                    BackgroundColor3 = state and self.PrimaryColor or Color3.fromRGB(180, 100, 150),
                 }, 0.2)
-
-                updateCanvas(state, true)
-                recalc(true)
-
+                self:updateCanvas(state, true)
+                self:recalc(true)
                 if fromUser then
-                    Window.Flags[mConfig.Flag] = state
-                    if ModuleObj._callback then task.spawn(ModuleObj._callback, state) end
+                    if self.Flag then self.Window.Flags[self.Flag] = state end
+                    if self._callback then task.spawn(self._callback, state) end
                 end
             end
-            ModuleObj._SetEnabled = setEnabled
 
             local ClickArea = New("TextButton", {
                 Size = UDim2.new(1, -s(90), 0, HEADER_H),
@@ -784,17 +785,15 @@ function Library:CreateWindow(config)
                 ZIndex = 2,
             }, Header)
             ClickArea.MouseButton1Click:Connect(function()
-                setEnabled(not ModuleObj.Enabled, true)
+                ModuleObj:setEnabled(not ModuleObj.Enabled, true)
             end)
             ToggleBg.InputBegan:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-                    setEnabled(not ModuleObj.Enabled, true)
+                    ModuleObj:setEnabled(not ModuleObj.Enabled, true)
                 end
             end)
 
-            registerFlag(Window, mConfig.Flag, function(v) setEnabled(v, false) end, ModuleObj.Enabled)
-            setEnabled(false, false)
-
+            ModuleObj:setEnabled(false, false)
             setmetatable(ModuleObj, {__index = Library.ModuleMeta})
             return ModuleObj
         end
@@ -822,34 +821,6 @@ function Library.ModuleMeta:CreateLabel(config)
     })
     lbl.Parent = self.Canvas
     return lbl
-end
-
-function Library.ModuleMeta:CreateParagraph(config)
-    config = config or {}
-    local lbl = New("TextLabel", {
-        Text = (config.Title and (config.Title .. "\n") or "") .. (config.Content or ""),
-        Size = UDim2.new(1, 0, 0, 0),
-        AutomaticSize = Enum.AutomaticSize.Y,
-        TextColor3 = Color3.fromRGB(255, 154, 200),
-        Font = Enum.Font.Gotham,
-        TextSize = s(10),
-        TextWrapped = true,
-        BackgroundTransparency = 1,
-        TextXAlignment = Enum.TextXAlignment.Left,
-    })
-    lbl.Parent = self.Canvas
-    return lbl
-end
-
-function Library.ModuleMeta:CreateDivider()
-    local div = New("Frame", {
-        Size = UDim2.new(1, 0, 0, 1),
-        BackgroundColor3 = Color3.fromRGB(255, 154, 200),
-        BackgroundTransparency = 0.6,
-        BorderSizePixel = 0,
-    })
-    div.Parent = self.Canvas
-    return div
 end
 
 function Library.ModuleMeta:CreateButton(config)
