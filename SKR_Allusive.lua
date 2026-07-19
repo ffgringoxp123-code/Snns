@@ -91,6 +91,27 @@ local Config = setmetatable({
 local Library = {}
 Library.__index = Library
 
+local function addAllusiveAliases(tbl, fn)
+    -- Tạo cả 2 dạng: CamelCase và snake_case
+    local names = {
+        ["CreateTab"] = "create_tab",
+        ["CreateModule"] = "create_module",
+        ["CreateToggle"] = "create_toggle",
+        ["CreateButton"] = "create_button",
+        ["CreateSlider"] = "create_slider",
+        ["CreateDropdown"] = "create_dropdown",
+        ["CreateTextbox"] = "create_textbox",
+        ["CreateKeybind"] = "create_keybind",
+        ["CreateLabel"] = "create_label",
+        ["CreateParagraph"] = "create_paragraph",
+        ["CreateDivider"] = "create_divider",
+    }
+    for camel, snake in pairs(names) do
+        tbl[camel] = fn
+        tbl[snake] = fn
+    end
+end
+
 function Library.new(config)
     return Library:CreateWindow(config)
 end
@@ -102,6 +123,14 @@ function Library:CreateWindow(config)
     Window.FirstTab = nil
     Window._config = Config:load(tostring(config.ConfigId or game.GameId))
     Window._choosingKeybind = false
+
+    local PrimaryColor = config.PrimaryColor or SAKURA_LIGHT
+    local PrimaryDark = Color3.new(PrimaryColor.R * 0.4, PrimaryColor.G * 0.4, PrimaryColor.B * 0.4)
+    local PrimaryBright = Color3.new(
+        math.min(PrimaryColor.R * 1.3, 1),
+        math.min(PrimaryColor.G * 1.3, 1),
+        math.min(PrimaryColor.B * 1.3, 1)
+    )
 
     local ParentUI
     local success, coregui = pcall(function() return game:GetService("CoreGui") end)
@@ -143,7 +172,7 @@ function Library:CreateWindow(config)
     Round(Topbar, s(14))
 
     local Title = New("TextLabel", {
-        Text = config.Title or "SKR Free",
+        Text = config.Title or config.title or "SKR Free",
         TextColor3 = Color3.fromRGB(255, 225, 235),
         Font = Enum.Font.GothamBold,
         TextSize = s(15),
@@ -157,7 +186,7 @@ function Library:CreateWindow(config)
     local Shimmer = New("UIGradient", {
         Color = ColorSequence.new({
             ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 225, 235)),
-            ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 154, 200)),
+            ColorSequenceKeypoint.new(0.5, PrimaryColor),
             ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 225, 235)),
         }),
     }, Title)
@@ -259,7 +288,7 @@ function Library:CreateWindow(config)
     }, Container)
 
     New("Frame", {
-        BackgroundColor3 = Color3.fromRGB(255, 154, 200),
+        BackgroundColor3 = PrimaryColor,
         BackgroundTransparency = 0.8,
         Position = UDim2.new(0, SidebarWidth, 0, s(10)),
         Size = UDim2.new(0, 1, 1, -s(20)),
@@ -302,13 +331,11 @@ function Library:CreateWindow(config)
         self:SaveConfig()
     end
 
-    function Window:CreateTab(title)
-        if type(title) == "string" then
-            return self:Tab({Title = title})
-        else
-            return self:Tab(title)
-        end
+    -- ===== ALLUSIVE-COMPAT: create_tab / CreateTab =====
+    function Window:create_tab(title, icon)
+        return self:Tab({Title = title, Icon = icon})
     end
+    Window.CreateTab = Window.create_tab
 
     function Window:Tab(tconfig)
         tconfig = tconfig or {}
@@ -330,7 +357,7 @@ function Library:CreateWindow(config)
             Name = "Indicator",
             Size = UDim2.new(0, s(2), 0, s(16)),
             Position = UDim2.new(0, s(6), 0.5, -s(8)),
-            BackgroundColor3 = Color3.fromRGB(255, 154, 200),
+            BackgroundColor3 = PrimaryColor,
             BorderSizePixel = 0,
             Visible = false,
         }, TabBtn)
@@ -341,14 +368,14 @@ function Library:CreateWindow(config)
             Position = UDim2.new(0, s(16), 0.5, -s(9)),
             BackgroundTransparency = 1,
             Image = imageId,
-            ImageColor3 = Color3.fromRGB(255, 154, 200),
+            ImageColor3 = PrimaryColor,
         }, TabBtn)
 
         local TabText = New("TextLabel", {
             Text = tabName,
             Size = UDim2.new(1, -s(40), 1, 0),
             Position = UDim2.new(0, s(40), 0, 0),
-            TextColor3 = Color3.fromRGB(255, 154, 200),
+            TextColor3 = PrimaryColor,
             Font = Enum.Font.GothamBold,
             TextSize = s(11),
             BackgroundTransparency = 1,
@@ -356,8 +383,8 @@ function Library:CreateWindow(config)
         }, TabBtn)
 
         local function UpdateTabVisuals(selected)
-            local accent = selected and Color3.fromRGB(255, 154, 200) or Color3.fromRGB(180, 100, 150)
-            local bg = selected and Color3.fromRGB(80, 20, 60) or Color3.fromRGB(50, 10, 40)
+            local accent = selected and PrimaryColor or Color3.fromRGB(180, 100, 150)
+            local bg = selected and PrimaryDark or Color3.fromRGB(50, 10, 40)
             Tween(TabBtn, {BackgroundColor3 = bg}, 0.2)
             Tween(TabIcon, {ImageColor3 = accent}, 0.2)
             Tween(TabText, {TextColor3 = accent}, 0.2)
@@ -425,17 +452,15 @@ function Library:CreateWindow(config)
             UpdateTabVisuals(true)
         end
 
-        Tab.LeftCol = LeftCol
-        Tab.RightCol = RightCol
-
-        function Tab:GetSide(section)
-            if section and section:lower() == "right" then return self.RightCol end
-            return self.LeftCol
+        local function GetSide(section)
+            if section and tostring(section):lower() == "right" then return RightCol end
+            return LeftCol
         end
 
-        function Tab:CreateModule(mConfig)
+        -- ===== MODULE (container) helpers =====
+        local function CreateModule(mConfig)
             mConfig = mConfig or {}
-            local parent = self:GetSide(mConfig.Section)
+            local parent = GetSide(mConfig.Section)
             local HEADER_H, DIVIDER_H = s(50), s(9)
             local MODULE_W = 0.92
             local flag = mConfig.Flag
@@ -472,7 +497,7 @@ function Library:CreateWindow(config)
                 Text = " " .. (mConfig.Description or ""),
                 Size = UDim2.new(0, titleWidth, 0, s(15)),
                 Position = UDim2.new(0, s(10), 0, s(26)),
-                TextColor3 = Color3.fromRGB(255, 154, 200),
+                TextColor3 = PrimaryColor,
                 Font = Enum.Font.Gotham,
                 TextSize = s(10),
                 BackgroundTransparency = 1,
@@ -485,7 +510,7 @@ function Library:CreateWindow(config)
                 BackgroundColor3 = Color3.fromRGB(100, 30, 75),
                 AutoButtonColor = false,
                 Text = "None",
-                TextColor3 = Color3.fromRGB(255, 154, 200),
+                TextColor3 = PrimaryColor,
                 Font = Enum.Font.Gotham,
                 TextSize = s(10),
                 ZIndex = 10,
@@ -509,7 +534,7 @@ function Library:CreateWindow(config)
             New("Frame", {
                 Size = UDim2.new(1, -s(20), 0, 1),
                 Position = UDim2.new(0, s(10), 0, HEADER_H),
-                BackgroundColor3 = Color3.fromRGB(255, 154, 200),
+                BackgroundColor3 = PrimaryColor,
                 BackgroundTransparency = 0.6,
                 BorderSizePixel = 0,
             }, ModuleFrame)
@@ -541,6 +566,7 @@ function Library:CreateWindow(config)
                 Enabled = false,
                 Flag = flag,
                 _callback = mConfig.Callback,
+                Window = Window,
             }
 
             local function recalc(animate)
@@ -578,7 +604,7 @@ function Library:CreateWindow(config)
 
                 Tween(ToggleDot, {
                     Position = state and UDim2.new(0, s(18), 0.5, -s(7)) or UDim2.new(0, s(2), 0.5, -s(7)),
-                    BackgroundColor3 = state and Color3.fromRGB(255, 154, 200) or Color3.fromRGB(180, 100, 150),
+                    BackgroundColor3 = state and PrimaryColor or Color3.fromRGB(180, 100, 150),
                 }, 0.2)
 
                 updateCanvas(state, true)
@@ -653,8 +679,80 @@ function Library:CreateWindow(config)
             end
 
             setmetatable(ModuleObj, {__index = Library.ModuleMeta})
-            ModuleObj.Window = Window
             return ModuleObj
+        end
+
+        -- ===== WIDGET HELPERS: gọi trực tiếp trên Tab (Allusive style) =====
+        -- Tự động tạo module ẩn + thêm component vào đó
+
+        local function autoModule(section)
+            return CreateModule({Section = section, Title = "", Description = ""})
+        end
+
+        function Tab:create_toggle(text, callback)
+            local mod = autoModule(self._lastSection)
+            return mod:CreateToggle({Text = text, Callback = callback})
+        end
+
+        function Tab:create_button(text, callback)
+            local mod = autoModule(self._lastSection)
+            return mod:CreateButton({Text = text, Callback = callback})
+        end
+
+        function Tab:create_slider(text, min, max, default, callback)
+            local mod = autoModule(self._lastSection)
+            return mod:CreateSlider({Text = text, Min = min, Max = max, Default = default, Callback = callback})
+        end
+
+        function Tab:create_dropdown(text, options, default, callback)
+            local mod = autoModule(self._lastSection)
+            return mod:CreateDropdown({Text = text, Options = options, Default = default, Callback = callback})
+        end
+
+        function Tab:create_textbox(text, placeholder, default, callback)
+            local mod = autoModule(self._lastSection)
+            return mod:CreateTextbox({Text = text, Placeholder = placeholder, Default = default, Callback = callback})
+        end
+
+        function Tab:create_keybind(text, default, callback)
+            local mod = autoModule(self._lastSection)
+            return mod:CreateKeybind({Text = text, Default = default, Callback = callback})
+        end
+
+        function Tab:create_label(text)
+            local mod = autoModule(self._lastSection)
+            return mod:CreateLabel({Text = text})
+        end
+
+        function Tab:create_paragraph(title, content)
+            local mod = autoModule(self._lastSection)
+            return mod:CreateParagraph({Title = title, Content = content})
+        end
+
+        function Tab:create_divider()
+            local mod = autoModule(self._lastSection)
+            return mod:CreateDivider()
+        end
+
+        -- Aliases CamelCase
+        Tab.CreateToggle = Tab.create_toggle
+        Tab.CreateButton = Tab.create_button
+        Tab.CreateSlider = Tab.create_slider
+        Tab.CreateDropdown = Tab.create_dropdown
+        Tab.CreateTextbox = Tab.create_textbox
+        Tab.CreateKeybind = Tab.create_keybind
+        Tab.CreateLabel = Tab.create_label
+        Tab.CreateParagraph = Tab.create_paragraph
+        Tab.CreateDivider = Tab.create_divider
+
+        -- Module method (nếu ai vẫn muốn dùng module truyền thống)
+        Tab.CreateModule = CreateModule
+        Tab.create_module = CreateModule
+
+        -- Cho phép section: tab:section("Right") rồi tạo element
+        function Tab:section(name)
+            self._lastSection = name
+            return self
         end
 
         return Tab
@@ -736,7 +834,7 @@ function Library.ModuleMeta:CreateToggle(config)
     config = config or {}
     local flag = config.Flag
     local state = config.Default or false
-    if flag and self.Window._config._flags[flag] ~= nil then
+    if flag and self.Window and self.Window._config and self.Window._config._flags[flag] ~= nil then
         state = self.Window._config._flags[flag]
     end
 
@@ -769,7 +867,7 @@ function Library.ModuleMeta:CreateToggle(config)
         Tween(Bg, {BackgroundColor3 = state and Color3.fromRGB(255, 154, 200) or Color3.fromRGB(100, 30, 75)}, 0.15)
         Tween(Dot, {Position = state and UDim2.new(1, -s(14), 0.5, -s(6)) or UDim2.new(0, s(2), 0.5, -s(6))}, 0.15)
         if fromUser then
-            if flag then self.Window:SetFlag(flag, state) end
+            if flag and self.Window then self.Window:SetFlag(flag, state) end
             if config.Callback then task.spawn(config.Callback, state) end
         end
     end
@@ -792,7 +890,7 @@ function Library.ModuleMeta:CreateSlider(config)
     local flag = config.Flag
     local min, max = config.Min or 0, config.Max or 100
     local value = math.clamp(config.Default or min, min, max)
-    if flag and self.Window._config._flags[flag] ~= nil then
+    if flag and self.Window and self.Window._config and self.Window._config._flags[flag] ~= nil then
         value = math.clamp(self.Window._config._flags[flag], min, max)
     end
     local suffix = config.Suffix or ""
@@ -891,7 +989,7 @@ function Library.ModuleMeta:CreateDropdown(config)
     local flag = config.Flag
     local options = config.Options or {"Option 1"}
     local selected = config.Default or options[1]
-    if flag and self.Window._config._flags[flag] ~= nil then
+    if flag and self.Window and self.Window._config and self.Window._config._flags[flag] ~= nil then
         selected = self.Window._config._flags[flag]
     end
 
@@ -1028,7 +1126,7 @@ function Library.ModuleMeta:CreateTextbox(config)
     Stroke(Wrapper, 1, 0)
 
     local defaultText = config.Default or ""
-    if flag and self.Window._config._flags[flag] ~= nil then
+    if flag and self.Window and self.Window._config and self.Window._config._flags[flag] ~= nil then
         defaultText = self.Window._config._flags[flag]
     end
 
@@ -1061,8 +1159,9 @@ function Library.ModuleMeta:CreateKeybind(config)
     config = config or {}
     local flag = config.Flag
     local bound = config.Default
-    if flag and self.Window._config._keybinds[flag] then
-        bound = Enum.KeyCode[self.Window._config._keybinds[flag]]
+    if flag and self.Window and self.Window._config and self.Window._config._keybinds[flag] then
+        local keyName = self.Window._config._keybinds[flag]
+        bound = Enum.KeyCode[keyName]
     end
     local listening = false
 
@@ -1091,8 +1190,8 @@ function Library.ModuleMeta:CreateKeybind(config)
     Round(Btn, s(6))
 
     Btn.MouseButton1Click:Connect(function()
-        if self.Window._choosingKeybind then return end
-        self.Window._choosingKeybind = true
+        if self.Window and self.Window._choosingKeybind then return end
+        if self.Window then self.Window._choosingKeybind = true end
         listening = true
         Btn.Text = "..."
     end)
@@ -1101,8 +1200,8 @@ function Library.ModuleMeta:CreateKeybind(config)
             bound = input.KeyCode
             Btn.Text = input.KeyCode.Name
             listening = false
-            self.Window._choosingKeybind = false
-            if flag then self.Window._config._keybinds[flag] = input.KeyCode.Name; self.Window:SaveConfig() end
+            if self.Window then self.Window._choosingKeybind = false end
+            if flag and self.Window then self.Window._config._keybinds[flag] = input.KeyCode.Name; self.Window:SaveConfig() end
             if config.Callback then task.spawn(config.Callback, bound) end
         elseif not listening and bound and input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == bound then
             if config.Pressed then task.spawn(config.Pressed) end
