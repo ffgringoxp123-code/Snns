@@ -317,6 +317,9 @@ function Library:CreateWindow(config)
         local tabName = config.Title or "Tab"
         local imageId = config.Icon or "rbxassetid://76499042599127"
 
+        -- Biến lưu section hiện tại cho Tab
+        local _currentSection = "Left"
+
         local TabBtn = New("TextButton", {
             Name = tabName .. "_Tab",
             Size = UDim2.new(0.9, 0, 0, s(35)),
@@ -426,48 +429,57 @@ function Library:CreateWindow(config)
             UpdateTabVisuals(true)
         end
 
-        Tab.LeftCol = LeftCol
-        Tab.RightCol = RightCol
-
-        function Tab:GetSide(section)
-            if section and tostring(section):lower() == "right" then return self.RightCol end
-            return self.LeftCol
+        -- ===== HÀM LẤY COLUMN THEO SECTION =====
+        local function GetColumn(section)
+            if section and tostring(section):lower() == "right" then
+                return RightCol
+            end
+            return LeftCol
         end
 
-        -- ===== ALLUSIVE-COMPAT: Widget helpers (gọi trực tiếp trên Tab) =====
+        -- ===== TAB: SECTION =====
+        function Tab:section(name)
+            _currentSection = name or "Left"
+            return self
+        end
+
+        -- ===== ALLUSIVE-COMPAT: Widget helpers =====
+        -- Các helper này DIRECTLY tạo module (không qua section trung gian)
+
         function Tab:create_toggle(text, callback)
-            local mod = self:CreateModule({Title = text, Description = ""})
+            local col = GetColumn(_currentSection)
+            local mod = self:_createModuleInColumn(col, text)
             return mod:CreateToggle({Text = text, Callback = callback})
         end
 
         function Tab:create_button(text, callback)
-            local mod = self:CreateModule({Title = text, Description = ""})
+            local col = GetColumn(_currentSection)
+            local mod = self:_createModuleInColumn(col, text)
             return mod:CreateButton({Text = text, Callback = callback})
         end
 
         function Tab:create_slider(text, min, max, default, callback)
-            local mod = self:CreateModule({Title = text, Description = ""})
+            local col = GetColumn(_currentSection)
+            local mod = self:_createModuleInColumn(col, text)
             return mod:CreateSlider({Text = text, Min = min, Max = max, Default = default, Callback = callback})
         end
 
         function Tab:create_dropdown(text, options, default, callback)
-            local mod = self:CreateModule({Title = text, Description = ""})
+            local col = GetColumn(_currentSection)
+            local mod = self:_createModuleInColumn(col, text)
             return mod:CreateDropdown({Text = text, Options = options, Default = default, Callback = callback})
         end
 
         function Tab:create_textbox(text, placeholder, default, callback)
-            local mod = self:CreateModule({Title = text, Description = ""})
+            local col = GetColumn(_currentSection)
+            local mod = self:_createModuleInColumn(col, text)
             return mod:CreateTextbox({Text = text, Placeholder = placeholder, Default = default, Callback = callback})
         end
 
         function Tab:create_keybind(text, default, callback)
-            local mod = self:CreateModule({Title = text, Description = ""})
+            local col = GetColumn(_currentSection)
+            local mod = self:_createModuleInColumn(col, text)
             return mod:CreateKeybind({Text = text, Default = default, Callback = callback})
-        end
-
-        function Tab:create_label(text)
-            local mod = self:CreateModule({Title = text, Description = ""})
-            return mod:CreateLabel({Text = text})
         end
 
         -- CamelCase aliases
@@ -477,12 +489,9 @@ function Library:CreateWindow(config)
         Tab.CreateDropdown = Tab.create_dropdown
         Tab.CreateTextbox = Tab.create_textbox
         Tab.CreateKeybind = Tab.create_keybind
-        Tab.CreateLabel = Tab.create_label
 
-        -- Module support (giữ tương thích cũ)
-        function Tab:CreateModule(mConfig)
-            mConfig = mConfig or {}
-            local parent = self:GetSide(mConfig.Section)
+        -- ===== Internal: tạo module trực tiếp trong 1 column cụ thể =====
+        function Tab:_createModuleInColumn(parent, title)
             local HEADER_H, DIVIDER_H = s(50), s(9)
             local MODULE_W = 0.92
 
@@ -501,11 +510,156 @@ function Library:CreateWindow(config)
                 ClipsDescendants = false,
             }, ModuleFrame)
 
-            local titleWidth = s(150)
+            New("TextLabel", {
+                Text = " " .. (title or "Module"),
+                Size = UDim2.new(0, s(150), 0, s(20)),
+                Position = UDim2.new(0, s(10), 0, s(6)),
+                TextColor3 = Color3.fromRGB(255, 200, 220),
+                Font = Enum.Font.GothamBold,
+                TextSize = s(14),
+                BackgroundTransparency = 1,
+                TextXAlignment = Enum.TextXAlignment.Left,
+            }, Header)
+
+            -- Toggle switch (module header)
+            local ToggleBg = New("Frame", {
+                Size = UDim2.new(0, s(34), 0, s(18)),
+                Position = UDim2.new(1, -s(46), 0, s(11)),
+                BackgroundColor3 = Color3.fromRGB(100, 30, 75),
+                ZIndex = 5,
+            }, Header)
+            Round(ToggleBg, s(999))
+            local ToggleDot = New("Frame", {
+                Size = UDim2.new(0, s(14), 0, s(14)),
+                Position = UDim2.new(0, s(2), 0.5, -s(7)),
+                BackgroundColor3 = Color3.fromRGB(180, 100, 150),
+            }, ToggleBg)
+            Round(ToggleDot, s(999))
+
+            New("Frame", {
+                Size = UDim2.new(1, -s(20), 0, 1),
+                Position = UDim2.new(0, s(10), 0, HEADER_H),
+                BackgroundColor3 = PrimaryColor,
+                BackgroundTransparency = 0.6,
+                BorderSizePixel = 0,
+            }, ModuleFrame)
+
+            local Options = New("Frame", {
+                Name = "Options",
+                Size = UDim2.new(1, -s(20), 0, 0),
+                Position = UDim2.new(0, s(10), 0, HEADER_H + DIVIDER_H),
+                BackgroundTransparency = 1,
+                AutomaticSize = Enum.AutomaticSize.Y,
+                ClipsDescendants = false,
+                Visible = true,
+            }, ModuleFrame)
+
+            local Canvas = New("Frame", {
+                Size = UDim2.new(1, 0, 0, 0),
+                BackgroundTransparency = 1,
+                ClipsDescendants = true,
+            }, Options)
+
+            local OptLayout = New("UIListLayout", {
+                Padding = UDim.new(0, s(8)),
+                SortOrder = Enum.SortOrder.LayoutOrder,
+            }, Canvas)
+
+            local ModuleObj = {
+                Options = Options,
+                Canvas = Canvas,
+                Enabled = false,
+                _callback = nil,
+            }
+
+            local function recalc(animate)
+                local target
+                if ModuleObj.Enabled then
+                    target = HEADER_H + DIVIDER_H + OptLayout.AbsoluteContentSize.Y + s(6)
+                else
+                    target = HEADER_H
+                end
+                if animate then
+                    Tween(ModuleFrame, {Size = UDim2.new(MODULE_W, 0, 0, target)}, 0.3, Enum.EasingStyle.Quart)
+                else
+                    ModuleFrame.Size = UDim2.new(MODULE_W, 0, 0, target)
+                end
+            end
+
+            local function updateCanvas(show, animate)
+                local targetHeight = show and OptLayout.AbsoluteContentSize.Y or 0
+                if animate then
+                    Tween(Canvas, {Size = UDim2.new(1, 0, 0, targetHeight)}, 0.25, Enum.EasingStyle.Quart)
+                else
+                    Canvas.Size = UDim2.new(1, 0, 0, targetHeight)
+                end
+            end
+
+            OptLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+                if ModuleObj.Enabled then
+                    updateCanvas(true, true)
+                end
+                recalc(ModuleObj.Enabled)
+            end)
+
+            local function setEnabled(state, fromUser)
+                ModuleObj.Enabled = state
+
+                Tween(ToggleDot, {
+                    Position = state and UDim2.new(0, s(18), 0.5, -s(7)) or UDim2.new(0, s(2), 0.5, -s(7)),
+                    BackgroundColor3 = state and PrimaryColor or Color3.fromRGB(180, 100, 150),
+                }, 0.2)
+
+                updateCanvas(state, true)
+                recalc(true)
+            end
+            ModuleObj._SetEnabled = setEnabled
+
+            local ClickArea = New("TextButton", {
+                Size = UDim2.new(1, -s(90), 0, HEADER_H),
+                BackgroundTransparency = 1,
+                Text = "",
+                ZIndex = 2,
+            }, Header)
+            ClickArea.MouseButton1Click:Connect(function()
+                setEnabled(not ModuleObj.Enabled, true)
+            end)
+            ToggleBg.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    setEnabled(not ModuleObj.Enabled, true)
+                end
+            end)
+
+            setmetatable(ModuleObj, {__index = Library.ModuleMeta})
+            return ModuleObj
+        end
+
+        -- ===== Public CreateModule (giữ tương thích cũ) =====
+        function Tab:CreateModule(mConfig)
+            mConfig = mConfig or {}
+            local col = GetColumn(mConfig.Section or _currentSection)
+            local HEADER_H, DIVIDER_H = s(50), s(9)
+            local MODULE_W = 0.92
+            local flag = mConfig.Flag
+
+            local ModuleFrame = New("Frame", {
+                BackgroundColor3 = Color3.fromRGB(60, 15, 45),
+                BackgroundTransparency = 0.3,
+                Size = UDim2.new(MODULE_W, 0, 0, HEADER_H),
+                ClipsDescendants = false,
+            }, col)
+            Round(ModuleFrame, s(16))
+            Stroke(ModuleFrame, 1.4, 0.15)
+
+            local Header = New("Frame", {
+                Size = UDim2.new(MODULE_W, 0, 0, HEADER_H),
+                BackgroundTransparency = 1,
+                ClipsDescendants = false,
+            }, ModuleFrame)
 
             New("TextLabel", {
                 Text = " " .. (mConfig.Title or "Module"),
-                Size = UDim2.new(0, titleWidth, 0, s(20)),
+                Size = UDim2.new(0, s(150), 0, s(20)),
                 Position = UDim2.new(0, s(10), 0, s(6)),
                 TextColor3 = Color3.fromRGB(255, 200, 220),
                 Font = Enum.Font.GothamBold,
@@ -516,7 +670,7 @@ function Library:CreateWindow(config)
 
             New("TextLabel", {
                 Text = " " .. (mConfig.Description or ""),
-                Size = UDim2.new(0, titleWidth, 0, s(15)),
+                Size = UDim2.new(0, s(150), 0, s(15)),
                 Position = UDim2.new(0, s(10), 0, s(26)),
                 TextColor3 = PrimaryColor,
                 Font = Enum.Font.Gotham,
@@ -524,8 +678,6 @@ function Library:CreateWindow(config)
                 BackgroundTransparency = 1,
                 TextXAlignment = Enum.TextXAlignment.Left,
             }, Header)
-
-            -- Bỏ KeybindBtn (nút "None") - không hiển thị keybind trên module header nữa
 
             local ToggleBg = New("Frame", {
                 Size = UDim2.new(0, s(34), 0, s(18)),
