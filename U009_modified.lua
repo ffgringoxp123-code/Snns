@@ -87,39 +87,60 @@ local originalMetatables = {}
 local Parry_Key = nil
 local PF = nil
 local SC = nil
+
+if ReplicatedStorage:FindFirstChild("Controllers") then
+    for _, child in ipairs(ReplicatedStorage.Controllers:GetChildren()) do
+        if child.Name:match("^SwordsController%s*$") then
+            SC = child
+        end
+    end
+end
+
+if LocalPlayer.PlayerGui:FindFirstChild("Hotbar") and LocalPlayer.PlayerGui.Hotbar:FindFirstChild("Block") then
+    for _, v in next, getconnections(LocalPlayer.PlayerGui.Hotbar.Block.Activated) do
+        if SC and getfenv(v.Function).script == SC then
+            PF = v.Function
+            break
+        end
+    end
+end
+
+local function update_divisor()
+    System.__properties.__divisor_multiplier = 0.75 + (System.__properties.__accuracy - 1) * (3 / 99)
+end
+
 local net_table_lit = {}
 local get_hash_net, get_hash_parry, get_num_net, get_remote_not, get_key_net_time, get_num_not
+local Parry_Key
 
 local function runGetgc()
-    for _, get_gc_nil in ipairs(getgc(true)) do
-        if type(get_gc_nil) == "table" then
-            for _, get_table_nil in pairs(get_gc_nil) do
-                if typeof(get_table_nil) == "Instance" and get_table_nil:IsA("RemoteEvent") then
-                    if get_table_nil:IsDescendantOf(game.ReplicatedStorage.Packages._Index["sleitnick_net@0.1.0"].net) then
-                        net_table_lit[get_table_nil] = true
+    for _, gcObj in ipairs(getgc(true)) do
+        if type(gcObj) == "table" then
+            for _, v in pairs(gcObj) do
+                if typeof(v) == "Instance" and v:IsA("RemoteEvent") then
+                    if v:IsDescendantOf(game.ReplicatedStorage.Packages._Index["sleitnick_net@0.1.0"].net) then
+                        net_table_lit[v] = true
                     end
                 end
             end
-        elseif type(get_gc_nil) == "function" then
-            local get_s_nil = debug.info(get_gc_nil, "s")
-            if get_s_nil and get_s_nil:find("SwordsController") and get_s_nil:find("PRY") then
-                local get_upvalues_nil = debug.getupvalues(get_gc_nil)
-                local get_with_key = get_upvalues_nil[3]
-                for _, get_remote_nil in ipairs(game.ReplicatedStorage.Packages._Index["sleitnick_net@0.1.0"].net:GetDescendants()) do
-                    if get_remote_nil:IsA("RemoteEvent") and not net_table_lit[get_remote_nil] then
-                        if get_remote_nil.Name:sub(1, 3) == "RE/" then
-                            if #get_remote_nil.Name >= 32 then
-                                if select(2, get_remote_nil.Name:gsub("[/`:<;=?>]", "")) >= 3 then
-                                    if type(get_upvalues_nil[8]) == "string" then
-                                        if get_remote_not == nil then
-                                            if type(get_with_key) == "table" and type(get_with_key[1]) == "table" then
-                                                get_key_net_time = get_upvalues_nil[4]
-                                                get_num_net = get_with_key[1][get_with_key[3]]
-                                                get_remote_not = get_remote_nil
-                                                get_hash_net = get_upvalues_nil[8]
-                                                get_hash_parry = get_upvalues_nil[3][2]
-                                            end
-                                        end
+        elseif type(gcObj) == "function" then
+            local src = debug.info(gcObj, "s")
+            if src and src:find("SwordsController") and src:find("PRY") then
+                local upvals = debug.getupvalues(gcObj)
+                local with_key = upvals[3]
+                for _, rem in ipairs(game.ReplicatedStorage.Packages._Index["sleitnick_net@0.1.0"].net:GetDescendants()) do
+                    if rem:IsA("RemoteEvent") and not net_table_lit[rem] then
+                        if rem.Name:sub(1, 3) == "RE/" and #rem.Name >= 32 then
+                            local specialCount = select(2, rem.Name:gsub("[/`:<;=?>]", ""))
+                            if specialCount >= 3 then
+                                if type(upvals[8]) == "string" and get_remote_not == nil then
+                                    if type(with_key) == "table" and type(with_key[1]) == "table" then
+                                        get_key_net_time = upvals[4]
+                                        get_num_net = with_key[1][with_key[3]]
+                                        get_remote_not = rem
+                                        get_hash_net = upvals[8]
+                                        get_hash_parry = upvals[3][2]
+                                        Parry_Key = get_hash_parry
                                     end
                                 end
                             end
@@ -127,10 +148,10 @@ local function runGetgc()
                     end
                 end
             end
-        elseif type(get_gc_nil) == "table" then
-            for _, get_parry_key in pairs(get_gc_nil) do
-                if type(get_parry_key) == "number" and get_parry_key ~= -math.huge then
-                    get_num_not = get_parry_key
+        elseif type(gcObj) == "table" then
+            for _, v in pairs(gcObj) do
+                if type(v) == "number" and v ~= -math.huge then
+                    get_num_not = v
                 end
             end
         end
@@ -138,9 +159,10 @@ local function runGetgc()
 end
 
 runGetgc()
+
 if not get_remote_not then
     task.spawn(function()
-        for _, t in ipairs({ 1, 2, 3, 5 }) do
+        for _, t in ipairs({1, 2, 3, 5}) do
             task.wait(t)
             if not get_remote_not then runGetgc() end
         end
