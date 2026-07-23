@@ -109,9 +109,20 @@ local function update_divisor()
     System.__properties.__divisor_multiplier = 0.75 + (System.__properties.__accuracy - 1) * (3 / 99)
 end
 
-local net_table_lit = {}
-local get_hash_net, get_hash_parry, get_num_net, get_remote_not, get_key_net_time, get_num_not
 local Parry_Key
+local net_table_lit = {}
+local get_remote_not = nil
+local hooked = false
+
+local function isValidRemoteArgs(args)
+    return #args == 7 and
+        type(args[2]) == "string" and
+        type(args[3]) == "number" and
+        typeof(args[4]) == "CFrame" and
+        type(args[5]) == "table" and
+        type(args[6]) == "table" and
+        type(args[7]) == "boolean"
+end
 
 local function runGetgc()
     for _, gcObj in ipairs(getgc(true)) do
@@ -135,23 +146,13 @@ local function runGetgc()
                             if specialCount >= 3 then
                                 if type(upvals[8]) == "string" and get_remote_not == nil then
                                     if type(with_key) == "table" and type(with_key[1]) == "table" then
-                                        get_key_net_time = upvals[4]
-                                        get_num_net = with_key[1][with_key[3]]
                                         get_remote_not = rem
-                                        get_hash_net = upvals[8]
-                                        get_hash_parry = upvals[3][2]
-                                        Parry_Key = get_hash_parry
+                                        Parry_Key = upvals[3][2]
                                     end
                                 end
                             end
                         end
                     end
-                end
-            end
-        elseif type(gcObj) == "table" then
-            for _, v in pairs(gcObj) do
-                if type(v) == "number" and v ~= -math.huge then
-                    get_num_not = v
                 end
             end
         end
@@ -166,7 +167,27 @@ if not get_remote_not then
             task.wait(t)
             if not get_remote_not then runGetgc() end
         end
+        if get_remote_not and not hooked then
+            hookRemoteDirect(get_remote_not)
+        end
     end)
+end
+
+function hookRemoteDirect(rem)
+    if hooked then return end
+    hooked = true
+    local oldFire = rem.FireServer
+    rem.FireServer = function(self, ...)
+        local args = {...}
+        if isValidRemoteArgs(args) then
+            Parry_Key = args[2]
+        end
+        return oldFire(self, ...)
+    end
+end
+
+if get_remote_not then
+    hookRemoteDirect(get_remote_not)
 end
 
 System.animation = {}
