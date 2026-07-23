@@ -80,16 +80,16 @@ local function runGetgc()
     end
 end
 
-runGetgc()
-if not get_remote_not then
-    task.spawn(function()
-        for _, t in ipairs({ 1, 2, 3, 5 }) do
-            task.wait(t)
-            if not get_remote_not then runGetgc() end
+task.spawn(function()
+    while true do
+        if not get_remote_not then
+            runGetgc()
         end
-    end)
-end
+        task.wait(0.5)
+    end
+end)
 
+runGetgc()
 local System = {
     __properties = {
         __autoparry_enabled = false,
