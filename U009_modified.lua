@@ -30,66 +30,7 @@ end
 
 local Alive = workspace:FindFirstChild("Alive") or workspace:WaitForChild("Alive")
 local Runtime = workspace.Runtime
-local net_table_lit = {}
-local get_hash_net, get_hash_parry, get_num_net, get_remote_not, get_key_net_time, get_num_not
 
-local function runGetgc()
-    for _, get_gc_nil in ipairs(getgc(true)) do
-        if type(get_gc_nil) == "table" then
-            for _, get_table_nil in pairs(get_gc_nil) do
-                if typeof(get_table_nil) == "Instance" and get_table_nil:IsA("RemoteEvent") then
-                    if get_table_nil:IsDescendantOf(game.ReplicatedStorage.Packages._Index["sleitnick_net@0.1.0"].net) then
-                        net_table_lit[get_table_nil] = true
-                    end
-                end
-            end
-        elseif type(get_gc_nil) == "function" then
-            local get_s_nil = debug.info(get_gc_nil, "s")
-            if get_s_nil and get_s_nil:find("SwordsController") and get_s_nil:find("PRY") then
-                local get_upvalues_nil = debug.getupvalues(get_gc_nil)
-                local get_with_key = get_upvalues_nil[3]
-                for _, get_remote_nil in ipairs(game.ReplicatedStorage.Packages._Index["sleitnick_net@0.1.0"].net:GetDescendants()) do
-                    if get_remote_nil:IsA("RemoteEvent") and not net_table_lit[get_remote_nil] then
-                        if get_remote_nil.Name:sub(1, 3) == "RE/" then
-                            if #get_remote_nil.Name >= 32 then
-                                if select(2, get_remote_nil.Name:gsub("[/`:<;=?>]", "")) >= 3 then
-                                    if type(get_upvalues_nil[8]) == "string" then
-                                        if get_remote_not == nil then
-                                            if type(get_with_key) == "table" and type(get_with_key[1]) == "table" then
-                                                get_key_net_time = get_upvalues_nil[4]
-                                                get_num_net = get_with_key[1][get_with_key[3]]
-                                                get_remote_not = get_remote_nil
-                                                get_hash_net = get_upvalues_nil[8]
-                                                get_hash_parry = get_upvalues_nil[3][2]
-                                            end
-                                        end
-                                    end
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-        elseif type(get_gc_nil) == "table" then
-            for _, get_parry_key in pairs(get_gc_nil) do
-                if type(get_parry_key) == "number" and get_parry_key ~= -math.huge then
-                    get_num_not = get_parry_key
-                end
-            end
-        end
-    end
-end
-
-task.spawn(function()
-    while true do
-        if not get_remote_not then
-            runGetgc()
-        end
-        task.wait(0.5)
-    end
-end)
-
-runGetgc()
 local System = {
     __properties = {
         __autoparry_enabled = false,
@@ -146,76 +87,65 @@ local originalMetatables = {}
 local Parry_Key = nil
 local PF = nil
 local SC = nil
+local net_table_lit = {}
+local get_hash_net, get_hash_parry, get_num_net, get_remote_not, get_key_net_time, get_num_not
 
-if ReplicatedStorage:FindFirstChild("Controllers") then
-    for _, child in ipairs(ReplicatedStorage.Controllers:GetChildren()) do
-        if child.Name:match("^SwordsController%s*$") then
-            SC = child
-        end
-    end
-end
-
-if LocalPlayer.PlayerGui:FindFirstChild("Hotbar") and LocalPlayer.PlayerGui.Hotbar:FindFirstChild("Block") then
-    for _, v in next, getconnections(LocalPlayer.PlayerGui.Hotbar.Block.Activated) do
-        if SC and getfenv(v.Function).script == SC then
-            PF = v.Function
-            break
-        end
-    end
-end
-
-local function update_divisor()
-    System.__properties.__divisor_multiplier = 0.75 + (System.__properties.__accuracy - 1) * (3 / 99)
-end
-
-function isValidRemoteArgs(args)
-    return #args == 7 and
-        type(args[2]) == "string" and
-        type(args[3]) == "number" and
-        typeof(args[4]) == "CFrame" and
-        type(args[5]) == "table" and
-        type(args[6]) == "table" and
-        type(args[7]) == "boolean"
-end
-
-function hookRemote(remote)
-    if not revertedRemotes[remote] then
-        if not originalMetatables[getrawmetatable(remote)] then
-            originalMetatables[getrawmetatable(remote)] = true
-            local meta = getrawmetatable(remote)
-            setreadonly(meta, false)
-
-            local oldIndex = meta.__index
-            meta.__index = function(self, key)
-                if (key == "FireServer" and self:IsA("RemoteEvent")) or
-                   (key == "InvokeServer" and self:IsA("RemoteFunction")) then
-                    return function(_, ...)
-                        local args = {...}
-                        if isValidRemoteArgs(args) and not revertedRemotes[self] then
-                            revertedRemotes[self] = args
-                            Parry_Key = args[2]
-                        end
-                        return oldIndex(self, key)(_, unpack(args))
+local function runGetgc()
+    for _, get_gc_nil in ipairs(getgc(true)) do
+        if type(get_gc_nil) == "table" then
+            for _, get_table_nil in pairs(get_gc_nil) do
+                if typeof(get_table_nil) == "Instance" and get_table_nil:IsA("RemoteEvent") then
+                    if get_table_nil:IsDescendantOf(game.ReplicatedStorage.Packages._Index["sleitnick_net@0.1.0"].net) then
+                        net_table_lit[get_table_nil] = true
                     end
                 end
-                return oldIndex(self, key)
             end
-            setreadonly(meta, true)
+        elseif type(get_gc_nil) == "function" then
+            local get_s_nil = debug.info(get_gc_nil, "s")
+            if get_s_nil and get_s_nil:find("SwordsController") and get_s_nil:find("PRY") then
+                local get_upvalues_nil = debug.getupvalues(get_gc_nil)
+                local get_with_key = get_upvalues_nil[3]
+                for _, get_remote_nil in ipairs(game.ReplicatedStorage.Packages._Index["sleitnick_net@0.1.0"].net:GetDescendants()) do
+                    if get_remote_nil:IsA("RemoteEvent") and not net_table_lit[get_remote_nil] then
+                        if get_remote_nil.Name:sub(1, 3) == "RE/" then
+                            if #get_remote_nil.Name >= 32 then
+                                if select(2, get_remote_nil.Name:gsub("[/`:<;=?>]", "")) >= 3 then
+                                    if type(get_upvalues_nil[8]) == "string" then
+                                        if get_remote_not == nil then
+                                            if type(get_with_key) == "table" and type(get_with_key[1]) == "table" then
+                                                get_key_net_time = get_upvalues_nil[4]
+                                                get_num_net = get_with_key[1][get_with_key[3]]
+                                                get_remote_not = get_remote_nil
+                                                get_hash_net = get_upvalues_nil[8]
+                                                get_hash_parry = get_upvalues_nil[3][2]
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        elseif type(get_gc_nil) == "table" then
+            for _, get_parry_key in pairs(get_gc_nil) do
+                if type(get_parry_key) == "number" and get_parry_key ~= -math.huge then
+                    get_num_not = get_parry_key
+                end
+            end
         end
     end
 end
 
-for _, remote in pairs(ReplicatedStorage:GetChildren()) do
-    if remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction") then
-        hookRemote(remote)
-    end
+runGetgc()
+if not get_remote_not then
+    task.spawn(function()
+        for _, t in ipairs({ 1, 2, 3, 5 }) do
+            task.wait(t)
+            if not get_remote_not then runGetgc() end
+        end
+    end)
 end
-
-ReplicatedStorage.ChildAdded:Connect(function(child)
-    if child:IsA("RemoteEvent") or child:IsA("RemoteFunction") then
-        hookRemote(child)
-    end
-end)
 
 System.animation = {}
 
