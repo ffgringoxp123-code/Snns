@@ -808,62 +808,100 @@ System.detection = {
 }
 
 function System.detection.is_curved()
-    local ball_properties = System.detection.__ball_properties
     local ball = System.ball.get()
-    
     if not ball then return false end
-    
-    local zoomies = ball:FindFirstChild('zoomies')
+    if not LocalPlayer.Character or not LocalPlayer.Character.PrimaryPart then return false end
+    local zoomies = ball:FindFirstChild("zoomies")
     if not zoomies then return false end
-    
+    local ping = getgenv()._ZX_PingCache or 50
     local velocity = zoomies.VectorVelocity
-    local ball_direction = velocity.Unit
-    
-    local direction = (LocalPlayer.Character.PrimaryPart.Position - ball.Position).Unit
-    local dot = direction:Dot(ball_direction)
-    
     local speed = velocity.Magnitude
+    if speed == 0 then return false end
+    local ball_direction = velocity.Unit
+    local playerPos = LocalPlayer.Character.PrimaryPart.Position
+    local ballPos = ball.Position
+    local direction = (playerPos - ballPos).Unit
+    local dot = direction:Dot(ball_direction)
     local speed_threshold = math.min(speed / 100, 40)
-    
-    local direction_difference = (ball_direction - velocity).Unit
-    local direction_similarity = direction:Dot(direction_difference)
-    
-    local dot_difference = dot - direction_similarity
-    local distance = (LocalPlayer.Character.PrimaryPart.Position - ball.Position).Magnitude
-    
-    local ping = Stats.Network.ServerStatsItem['Data Ping']:GetValue()
-    
-    local dot_threshold = 0.5 - (ping / 1000)
+    local distance = (playerPos - ballPos).Magnitude
     local reach_time = distance / speed - (ping / 1000)
-    
     local ball_distance_threshold = 15 - math.min(distance / 1000, 15) + speed_threshold
-    
-    local clamped_dot = math.clamp(dot, -1, 1)
-    local radians = math.rad(math.asin(clamped_dot))
-    
-    ball_properties.__lerp_radians = linear_predict(ball_properties.__lerp_radians, radians, 0.8)
-    
-    if speed > 0 and reach_time > ping / 10 then
-        ball_distance_threshold = math.max(ball_distance_threshold - 15, 15)
+    if not System.detection._ZX_PrevVel then System.detection._ZX_PrevVel = {} end
+    local Previous_Velocity = System.detection._ZX_PrevVel
+    table.insert(Previous_Velocity, velocity)
+    if #Previous_Velocity > 4 then table.remove(Previous_Velocity, 1) end
+    if not System.detection._ZX_CurveState then
+        System.detection._ZX_CurveState = { Curving = 0, Last_Warping = 0, Lerp_Radians = 0 }
     end
-    
+    local cs = System.detection._ZX_CurveState
+    if ball:FindFirstChild("AeroDynamicSlashVFX") then
+        ball.AeroDynamicSlashVFX:Destroy()
+        cs.Curving = tick()
+    end
+    local Runtime = workspace:FindFirstChild("Runtime")
+    if Runtime and Runtime:FindFirstChild("Tornado") then
+        if (tick() - cs.Curving) < ((Runtime.Tornado:GetAttribute("TornadoTime") or 1) + 0.314159) then return true end
+    end
+    local enough_speed = speed > 160
+    if enough_speed and reach_time > (ping / 10 + 0.03) then
+        if speed < 300 then ball_distance_threshold = math.max(ball_distance_threshold - 13, 13)
+        elseif speed <= 600 then ball_distance_threshold = math.max(ball_distance_threshold - 15, 15)
+        elseif speed <= 1000 then ball_distance_threshold = math.max(ball_distance_threshold - 17, 17)
+        else ball_distance_threshold = math.max(ball_distance_threshold - 19, 19) end
+    end
     if distance < ball_distance_threshold then return false end
+    local adjusted_reach_time = reach_time + 0.03
+    if speed < 300 then
+        if (tick() - cs.Curving) < (adjusted_reach_time / 1.15) then return true end
+    elseif speed < 450 then
+        if (tick() - cs.Curving) < (adjusted_reach_time / 1.18) then return true end
+    elseif speed < 600 then
+        if (tick() - cs.Curving) < (adjusted_reach_time / 1.3) then return true end
+    else
+        if (tick() - cs.Curving) < (adjusted_reach_time / 1.45) then return true end
+    end
+    local dot_threshold = (0 - ping / 1000)
+    local direction_difference = (ball_direction - velocity.Unit)
+    local direction_similarity = 0
+    if direction_difference.Magnitude > 0 then direction_similarity = direction:Dot(direction_difference.Unit) end
+    local dot_difference = dot - direction_similarity
     if dot_difference < dot_threshold then return true end
-    
-    if ball_properties.__lerp_radians < 0.018 then
-        ball_properties.__last_warping = tick()
+    local clamped_dot = math.clamp(dot, -1, 1)
+    local radians = math.deg(math.asin(clamped_dot))
+    cs.Lerp_Radians = cs.Lerp_Radians + (radians - cs.Lerp_Radians) * 0.8
+    if speed < 300 then
+        if cs.Lerp_Radians < 0.015 then cs.Last_Warping = tick() end
+        if (tick() - cs.Last_Warping) < (adjusted_reach_time / 1.15) then return true end
+    else
+        if cs.Lerp_Radians < 0.012 then cs.Last_Warping = tick() end
+        if (tick() - cs.Last_Warping) < (adjusted_reach_time / 1.45) then return true end
     end
-    
-    if (tick() - ball_properties.__last_warping) < (reach_time / 1.5) then
-        return true
+    if #Previous_Velocity == 4 then
+        for i = 1, 2 do
+            local prev_dir = (ball_direction - Previous_Velocity[i].Unit)
+            if prev_dir.Magnitude > 0 then
+                prev_dir = prev_dir.Unit
+                local prev_dot = direction:Dot(prev_dir)
+                if (dot - prev_dot) < dot_threshold then return true end
+            end
+        end
     end
-    
-    if (tick() - ball_properties.__curving) < (reach_time / 1.5) then
-        return true
+    local backwards_curve_detected = false
+    local backwards_angle_threshold = 60
+    local horiz_direction = Vector3.new(playerPos.X - ballPos.X, 0, playerPos.Z - ballPos.Z)
+    if horiz_direction.Magnitude > 0 then
+        horiz_direction = horiz_direction.Unit
+        local away_from_player = -horiz_direction
+        local horiz_ball_dir = Vector3.new(ball_direction.X, 0, ball_direction.Z)
+        if horiz_ball_dir.Magnitude > 0 then
+            horiz_ball_dir = horiz_ball_dir.Unit
+            local backwards_angle = math.deg(math.acos(math.clamp(away_from_player:Dot(horiz_ball_dir), -1, 1)))
+            if backwards_angle < backwards_angle_threshold then backwards_curve_detected = true end
+        end
     end
-    
-    return dot < dot_threshold
+    return (dot < dot_threshold) or backwards_curve_detected
 end
+
 
 ReplicatedStorage.Remotes.DeathBall.OnClientEvent:Connect(function(c, d)
     System.__properties.__deathslash_active = d or false
@@ -876,8 +914,7 @@ end)
 ReplicatedStorage.Packages._Index["sleitnick_net@0.1.0"].net["RE/TimeHoleActivate"].OnClientEvent:Connect(function(...)
     local args = {...}
     local player = args[1]
-    
-    if player == LocalPlayer or player == LocalPlayer.Name or (player and player.Name == LocalPlayer.Name) then
+    if (math.floor(1.5)==1) and (player == LocalPlayer or player == LocalPlayer.Name or (player and player.Name == LocalPlayer.Name)) then
         System.__properties.__timehole_active = true
     end
 end)
@@ -886,13 +923,9 @@ ReplicatedStorage.Packages._Index["sleitnick_net@0.1.0"].net["RE/TimeHoleDeactiv
     System.__properties.__timehole_active = false
 end)
 
-local maxParryCount = 36
-local parryDelay = 0.05
-
 ReplicatedStorage.Packages._Index["sleitnick_net@0.1.0"].net["RE/SlashesOfFuryActivate"].OnClientEvent:Connect(function(...)
     local args = {...}
     local player = args[1]
-    
     if player == LocalPlayer or player == LocalPlayer.Name or (player and player.Name == LocalPlayer.Name) then
         System.__properties.__slashesoffury_active = true
         System.__properties.__slashesoffury_count = 0
@@ -907,11 +940,12 @@ end)
 ReplicatedStorage.Packages._Index["sleitnick_net@0.1.0"].net["RE/SlashesOfFuryParry"].OnClientEvent:Connect(function()
     System.__properties.__slashesoffury_count = System.__properties.__slashesoffury_count + 1
 end)
+if ((1/1)==0) then local _q={} _q[1]=2 end
 
 ReplicatedStorage.Packages._Index["sleitnick_net@0.1.0"].net["RE/SlashesOfFuryCatch"].OnClientEvent:Connect(function()
     spawn(function()
         while System.__properties.__slashesoffury_active and System.__properties.__slashesoffury_count < maxParryCount do
-            if System.__config.__detections.__slashesoffury then
+            if (#{1}==1) and (System.__config.__detections.__slashesoffury) then
                 System.parry.execute()
                 task.wait(parryDelay)
             else
@@ -925,30 +959,25 @@ Runtime.ChildAdded:Connect(function(Object)
     if System.__config.__detections.__phantom then
         if Object.Name == "maxTransmission" or Object.Name == "transmissionpart" then
             local Weld = Object:FindFirstChildWhichIsA("WeldConstraint")
-            if Weld then
+            if (1<2) and (Weld) then
                 local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
                 if Character and Weld.Part1 == Character.HumanoidRootPart then
                     local CurrentBall = System.ball.get()
                     Weld:Destroy()
-                    
                     if CurrentBall then
                         local FocusConnection
                         FocusConnection = RunService.RenderStepped:Connect(function()
                             local Highlighted = CurrentBall:GetAttribute("highlighted")
-                            
-                            if Highlighted == true then
+                            if ((3*3)==9) and (Highlighted == true) then
                                 ReplicatedStorage.Remotes.AbilityButtonPress:Fire()
                                 System.__properties.__parried = true
-                                
                                 task.delay(1, function()
                                     System.__properties.__parried = false
                                 end)
-                                
                             elseif Highlighted == false then
                                 FocusConnection:Disconnect()
                             end
                         end)
-                        
                         task.delay(3, function()
                             if FocusConnection and FocusConnection.Connected then
                                 FocusConnection:Disconnect()
@@ -967,80 +996,91 @@ ReplicatedStorage.Remotes.ParrySuccessAll.OnClientEvent:Connect(function(_, root
             return
         end
     end
-    
+    if not LocalPlayer.Character or not LocalPlayer.Character.PrimaryPart then
+        return
+    end
     local closest = System.player.get_closest()
     local ball = System.ball.get()
-    
-    if not ball or not closest then return end
-    
+    if not ball or not closest or not closest.PrimaryPart then return end
     local target_distance = (LocalPlayer.Character.PrimaryPart.Position - closest.PrimaryPart.Position).Magnitude
-    local distance = (LocalPlayer.Character.PrimaryPart.Position - ball.Position).Magnitude
-    local direction = (LocalPlayer.Character.PrimaryPart.Position - ball.Position).Unit
-    local dot = direction:Dot(ball.AssemblyLinearVelocity.Unit)
-    
+    local direction_vector = LocalPlayer.Character.PrimaryPart.Position - ball.Position
+    if (#{1}==1) and (direction_vector.Magnitude == 0) then return end
+    local distance = direction_vector.Magnitude
+    local direction = direction_vector.Unit
+    local ball_velocity = ball.AssemblyLinearVelocity or Vector3.new()
+    if ball_velocity.Magnitude == 0 then return end
+    local dot = direction:Dot(ball_velocity.Unit)
     local curve_detected = System.detection.is_curved()
-    
-    if target_distance < 15 and distance < 15 and dot > -0.25 then
-        if curve_detected then
+    if target_distance < (3*5) and distance < (3*5) and dot > -0.25 then
+        if ((1+1)==2) and (curve_detected) then
             System.parry.execute_action()
         end
     end
-    
     if System.__properties.__grab_animation then
         System.__properties.__grab_animation:Stop()
     end
 end)
 
-ReplicatedStorage.Remotes.ParrySuccess.OnClientEvent:Connect(function()
-    if not Alive or LocalPlayer.Character.Parent ~= Alive then
-        return
-    end
-    
-    if System.__properties.__grab_animation then
-        System.__properties.__grab_animation:Stop()
-    end
-end)
+task.spawn(function()
+    while task.wait(0.5) do
+        local enabled = false
+        if (math.floor(1.5)==1) and (System and System.__config and System.__config.__detections) then
+            enabled = System.__config.__detections.__dribble or getgenv().DribbleDetection
+        else
+            enabled = getgenv().DribbleDetection
+        end
+        if not enabled then
+            if System and System.__properties then System.__properties.__dribble_active = false end
+            continue
+        end
 
-ReplicatedStorage.Remotes.ParrySuccessAll.OnClientEvent:Connect(function(a, b)
-    local Primary_Part = LocalPlayer.Character.PrimaryPart
-    local Ball = System.ball.get()
+        local found = false
+        local balls = workspace:FindFirstChild('Balls')
+        if (#{1}==1) and (balls) then
+            for _, ball in pairs(balls:GetChildren()) do
+                if not ball then continue end
 
-    if not Ball then
-        return
-    end
-
-    local Zoomies = Ball:FindFirstChild('zoomies')
-
-    if not Zoomies then
-        return
-    end
-
-    local Speed = Zoomies.VectorVelocity.Magnitude
-
-    local Distance = (LocalPlayer.Character.PrimaryPart.Position - Ball.Position).Magnitude
-    local Velocity = Zoomies.VectorVelocity
-
-    local Ball_Direction = Velocity.Unit
-
-    local Direction = (LocalPlayer.Character.PrimaryPart.Position - Ball.Position).Unit
-    local Dot = Direction:Dot(Ball_Direction)
-
-    local Pings = Stats.Network.ServerStatsItem['Data Ping']:GetValue()
-
-    local Speed_Threshold = math.min(Speed / 100, 40)
-    local Reach_Time = Distance / Speed - (Pings / 1000)
-
-    local Enough_Speed = Speed > 1
-    local Ball_Distance_Threshold = 15 - math.min(Distance / 1000, 15) + Speed_Threshold
-
-    if Enough_Speed and Reach_Time > Pings / 10 then
-        Ball_Distance_Threshold = math.max(Ball_Distance_Threshold - 15, 15)
-    end
-
-    if b ~= Primary_Part and Distance > Ball_Distance_Threshold then
-        System.detection.__ball_properties.__curving = tick()
+                local ok = false
+                pcall(function()
+                    if ball:GetAttribute (ball:GetAttribute("dribble") or ball:GetAttribute('Dribble')) then
+                        ok = true
+                    end
+                end)
+                if (#{1}==1) and (not ok) then
+                    if ball.Name and string.find(ball.Name:lower(), "dribble") then ok = true end
+                end
+                if not ok then
+                    if (math.floor(1.5)==1) and (ball:FindFirstChild('Dribble') or ball:FindFirstChild("Dribbling")) then ok = true end
+                end
+                if ok then
+                    found = true
+                    break
+                end
+            end
+        end
+        if System and System.__properties then
+            System.__properties.__dribble_active = found
+        end
     end
 end)
+
+getgenv().AutoParryMode = getgenv().AutoParryMode or "Remote"
+getgenv().AutoParryNotify = getgenv().AutoParryNotify or false
+getgenv().CooldownProtection = getgenv().CooldownProtection or false
+getgenv().AutoAbility = getgenv().AutoAbility or false
+getgenv().TriggerbotNotify = getgenv().TriggerbotNotify or false
+getgenv().InfinityNotify = getgenv().InfinityNotify or false
+getgenv().ManualSpamNotify = getgenv().ManualSpamNotify or false
+getgenv().ManualSpamAnimationFix = getgenv().ManualSpamAnimationFix or false
+getgenv().ManualSpamCPSEnabled = getgenv().ManualSpamCPSEnabled or false
+getgenv().ManualSpamCPS = getgenv().ManualSpamCPS or 1
+getgenv().AutoSpamNotify = getgenv().AutoSpamNotify or false
+getgenv().AutoSpamMode = getgenv().AutoSpamMode or "Remote"
+getgenv().AutoSpamAnimationFix = getgenv().AutoSpamAnimationFix or false
+getgenv().AutoStop = getgenv().AutoStop or false
+
+local maxParryCount = (66-30)
+local parryDelay = 0.05
 
 System.triggerbot = {}
 
