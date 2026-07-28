@@ -534,48 +534,8 @@ end
 System.animation = {}
 
 function System.animation.play_grab_parry()
-    if not System.__properties.__play_animation then
-        return
-    end
-    
-    local character = LocalPlayer.Character
-    if not character then return end
-    
-    local humanoid = character:FindFirstChildOfClass('Humanoid')
-    local animator = humanoid and humanoid:FindFirstChildOfClass('Animator')
-    if not humanoid or not animator then return end
-    
-    local sword_name
-    if getgenv().skinChangerEnabled then
-        sword_name = getgenv().swordAnimations
-    else
-        sword_name = character:GetAttribute('CurrentlyEquippedSword')
-    end
-    if not sword_name then return end
-    
-    local sword_api = ReplicatedStorage.Shared.SwordAPI.Collection
-    local parry_animation = sword_api.Default:FindFirstChild('GrabParry')
-    if not parry_animation then return end
-    
-    local sword_data = ReplicatedStorage.Shared.ReplicatedInstances.Swords.GetSword:Invoke(sword_name)
-    if not sword_data or not sword_data['AnimationType'] then return end
-    
-    for _, object in pairs(sword_api:GetChildren()) do
-        if object.Name == sword_data['AnimationType'] then
-            if object:FindFirstChild('GrabParry') or object:FindFirstChild('Grab') then
-                local animation_type = object:FindFirstChild('GrabParry') and 'GrabParry' or 'Grab'
-                parry_animation = object[animation_type]
-            end
-        end
-    end
-    
-    if System.__properties.__grab_animation and System.__properties.__grab_animation.IsPlaying then
-        System.__properties.__grab_animation:Stop()
-    end
-    
-    System.__properties.__grab_animation = animator:LoadAnimation(parry_animation)
-    System.__properties.__grab_animation.Priority = Enum.AnimationPriority.Action4
-    System.__properties.__grab_animation:Play()
+
+    return
 end
 
 System.ball = {}
