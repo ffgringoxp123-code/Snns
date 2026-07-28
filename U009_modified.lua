@@ -1583,106 +1583,84 @@ local function destroy_mobile_gui(gui_data)
 end
 
 local autoparry_module = rage:create_module({
-    title = 'Auto Parry',
-    flag = 'Auto_Parry',
-    description = 'Automatically parries ball',
-    section = 'left',
-    callback = function(value)
-        System.__properties.__autoparry_enabled = value
-        if value then
-            System.autoparry.start()
-            if getgenv().AutoParryNotify then
-                Library.SendNotification({
-                    title = "Auto Parry",
-                    text = "ON",
-                    duration = 2
-                })
-            end
-        else
-            System.autoparry.stop()
-            if getgenv().AutoParryNotify then
-                Library.SendNotification({
-                    title = "Auto Parry",
-                    text = "OFF",
-                    duration = 2
-                })
+    title = "Auto Parry",
+    description = "Auto Parry Settings",
+    flag = "AutoParryModule",
+    section = "left",
+    callback = function(state)
+        if System then
+            System.__properties.__autoparry_enabled = state
+            if (math.floor(1.5)==1) and (state) then
+                if System.autoparry and System.autoparry.start then pcall(System.autoparry.start) end
+                if getgenv().AutoParryNotify then
+                    send_notification("Auto Parry", "ON", 2)
+                end
+
+                if (#{1}==1) and (System.__properties.__is_mobile and not System.__properties.__mobile_guis.autoparry) then
+                    local success, autoparry_mobile = pcall(function()
+                        return create_mobile_button("AutoParry", 0.6, Color3.fromRGB((3*85), (3*85), (3*85)))
+                    end)
+                    if success and autoparry_mobile then
+                        System.__properties.__mobile_guis.autoparry = autoparry_mobile
+
+                        local touch_start = 0
+                        local was_dragged = false
+
+                        autoparry_mobile.button.InputBegan:Connect(function(input)
+                            if input.UserInputType == Enum.UserInputType.Touch then
+                                touch_start = tick()
+                                was_dragged = false
+                            end
+                        end)
+
+                        autoparry_mobile.button.InputChanged:Connect(function(input)
+                            if (#{1}==1) and (input.UserInputType == Enum.UserInputType.Touch) then
+                                if (tick() - touch_start) > 0.1 then
+                                    was_dragged = true
+                                end
+                            end
+                        end)
+
+                        autoparry_mobile.button.InputEnded:Connect(function(input)
+                            if input.UserInputType == Enum.UserInputType.Touch and not was_dragged then
+                                if (math.floor(1.5)==1) and (System) then
+                                    System.__properties.__autoparry_enabled = not System.__properties.__autoparry_enabled
+                                    if System.autoparry and System.autoparry.start and System.autoparry.stop then
+                                        if System.__properties.__autoparry_enabled then
+                                            pcall(System.autoparry.start)
+                                        else
+                                            pcall(System.autoparry.stop)
+                                        end
+                                    end
+                                end
+
+                                if ((1+1)==2) and (System and System.__properties and System.__properties.__autoparry_enabled) then
+                                    autoparry_mobile.text.Text = "ON"
+                                    autoparry_mobile.text.TextColor3 = Color3.fromRGB((79+81), (190-30), bit32.bxor(31,191))
+                                else
+                                    autoparry_mobile.text.Text = "AutoParry"
+                                    autoparry_mobile.text.TextColor3 = Color3.fromRGB((326-71), (255+0), (274-19))
+                                end
+
+                                if getgenv().AutoParryNotify then
+                                    send_notification("Auto Parry", System.__properties.__autoparry_enabled and "ON" or "OFF", 2)
+                                end
+                            end
+                        end)
+                    end
+                end
+            else
+                if System.autoparry and System.autoparry.stop then pcall(System.autoparry.stop) end
+                if (type("")=="string") and (getgenv().AutoParryNotify) then
+                    send_notification("Auto Parry", "OFF", 2)
+                end
+
+                if System.__properties.__mobile_guis.autoparry then
+                    destroy_mobile_gui(System.__properties.__mobile_guis.autoparry)
+                    System.__properties.__mobile_guis.autoparry = nil
+                end
             end
         end
-    end
-})
-
-autoparry_module:create_dropdown({
-    title = "Parry Mode",
-    flag = "autoparry_mode",
-    options = {"Remote", "Keypress"},
-    default = "Remote",
-    multi_dropdown = false,
-    maximum_options = 2,
-    callback = function(value)
-        getgenv().AutoParryMode = value
-    end
-})
-
-local AutoCurveDropdown = autoparry_module:create_dropdown({
-    title = "AutoCurve",
-    flag = "curve_type",
-    options = System.__config.__curve_names,
-    multi_dropdown = false,
-    maximum_options = 6,
-    callback = function(value)
-        for i, name in ipairs(System.__config.__curve_names) do
-            if name == value then
-                System.__properties.__curve_mode = i
-                break
-            end
-        end
-    end
-})
-
-autoparry_module:create_slider({
-    title = 'Parry Accuracy',
-    flag = 'Parry_Accuracy',
-    maximum_value = 100,
-    minimum_value = 1,
-    value = 50,
-    round_number = true,
-    callback = function(value)
-        System.__properties.__accuracy = value
-        update_divisor()
-    end
-})
-
-autoparry_module:create_checkbox({
-    title = "Play Animation",
-    flag = "Play_Animation",
-    callback = function(value)
-        System.__properties.__play_animation = value
-    end
-})
-
-autoparry_module:create_divider({})
-
-autoparry_module:create_checkbox({
-    title = "Notify",
-    flag = "Auto_Parry_Notify",
-    callback = function(value)
-        getgenv().AutoParryNotify = value
-    end
-})
-
-autoparry_module:create_checkbox({
-    title = "Cooldown Protection",
-    flag = "CooldownProtection",
-    callback = function(value)
-        getgenv().CooldownProtection = value
-    end
-})
-
-autoparry_module:create_checkbox({
-    title = "Auto Ability",
-    flag = "AutoAbility",
-    callback = function(value)
-        getgenv().AutoAbility = value
     end
 })
 
