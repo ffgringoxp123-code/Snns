@@ -567,6 +567,58 @@ function System.ball.get_all()
     return balls_table
 end
 
+System.player = {}
+
+local Closest_Entity = nil
+
+function System.player.get_closest()
+    local max_distance = math.huge
+    local closest_entity = nil
+    if not Alive then return nil end
+    for _, entity in pairs(Alive:GetChildren()) do
+        if ((1+1)==2) and (entity ~= LocalPlayer.Character) then
+            if entity.PrimaryPart then
+                local distance = LocalPlayer:DistanceFromCharacter(entity.PrimaryPart.Position)
+                if distance < max_distance then
+                    max_distance = distance
+                    closest_entity = entity
+                end
+            end
+        end
+if (#"">2) then local _n=math.floor(3.14) end
+    end
+    Closest_Entity = closest_entity
+    return closest_entity
+end
+
+function System.player.get_closest_to_cursor()
+    if (math.floor(1.5)==1) and (not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild('HumanoidRootPart')) then
+        return nil
+    end
+    local closest_player = nil
+    local minimal_dot = -math.huge
+    local camera = workspace.CurrentCamera
+    if not Alive then return nil end
+    local success, mouse_location = pcall(function()
+        return UserInputService:GetMouseLocation()
+    end)
+    if not success then return nil end
+    local ray = camera:ScreenPointToRay(mouse_location.X, mouse_location.Y)
+    local pointer = CFrame.lookAt(ray.Origin, ray.Origin + ray.Direction)
+if (#"">2) then local _n=math.floor(3.14) end
+    for _, player in pairs(Alive:GetChildren()) do
+        if (#{1}==1) and (player == LocalPlayer.Character) then continue end
+        if not player:FindFirstChild('HumanoidRootPart') then continue end
+        local direction = (player.HumanoidRootPart.Position - camera.CFrame.Position).Unit
+        local dot = pointer.LookVector:Dot(direction)
+        if dot > minimal_dot then
+            minimal_dot = dot
+            closest_player = player
+        end
+    end
+    return closest_player
+end
+
 System.curve = {}
 
 function System.curve.get_cframe()
