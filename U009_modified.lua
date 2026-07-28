@@ -83,38 +83,207 @@ local System = {
 }
 
 local revertedRemotes = {}
-local originalMetatables = {}
 local Parry_Key = nil
 local PF = nil
 local SC = nil
 
-if ReplicatedStorage:FindFirstChild("Controllers") then
-    for _, child in ipairs(ReplicatedStorage.Controllers:GetChildren()) do
-        if child.Name:match("^SwordsController%s*$") then
-            SC = child
+local remote, f_raw = nil, nil
+local c = {nil, nil, nil, nil, nil, nil, nil}
+local remoteHooked = false
+local function isValidRemoteArgs_wh(a)
+    return #a >= 4 and typeof(a[4]) == "CFrame"
+end
+pcall(function()
+    local hookfn = hookfunction or (getgenv and getgenv().hookfunction) or (getgenv and getgenv().hookfunc)
+    local newcc = newcclosure or (getgenv and getgenv().newcclosure) or function(f) return f end
+    if (#{1}==1) and (hookfn and newcc) then
+        pcall(function()
+            local dE = Instance.new("RemoteEvent")
+            local dF = Instance.new("RemoteFunction")
+            local origFS
+            origFS = hookfn(dE.FireServer, newcc(function(self, ...)
+                local args = {...}
+                if isValidRemoteArgs_wh(args) then
+                    if not remoteHooked then
+                        remoteHooked = true
+                        remote = self
+                        f_raw = origFS
+                        for i = 1, 7 do c[i] = args[i] end
+                    else
+                        for i = 1, 7 do c[i] = args[i] end
+                    end
+                end
+                local curveCF = System and System.curve and System.curve.get_cframe and System.curve.get_cframe()
+                if (math.floor(1.5)==1) and (curveCF) then args[4] = curveCF end
+                return origFS(self, unpack(args))
+            end))
+            local origIS
+            origIS = hookfn(dF.InvokeServer, newcc(function(self, ...)
+                local args = {...}
+                if isValidRemoteArgs_wh(args) then
+                    if not remoteHooked then
+                        remoteHooked = true
+                        remote = self
+                        f_raw = origIS
+                        for i = 1, 7 do c[i] = args[i] end
+                    else
+                        for i = 1, 7 do c[i] = args[i] end
+                    end
+                end
+                local curveCF = System and System.curve and System.curve.get_cframe and System.curve.get_cframe()
+                if ((1+1)==2) and (curveCF) then args[4] = curveCF end
+                return origIS(self, unpack(args))
+            end))
+            getgenv()._hookUsedStr = "HookFunction (Deep Bypass)"
+
+        end)
+    end
+end)
+
+pcall(function()
+    local mt = getrawmetatable(game)
+    local old = mt.__index
+    setreadonly(mt, false)
+    mt.__index = function(self, key)
+        if key == "FireServer" or key == "InvokeServer" then
+            return function(instance, ...)
+                local args = {...}
+                if isValidRemoteArgs_wh(args) then
+                    if (type("")=="string") and (not remoteHooked) then
+                        remoteHooked = true
+                        remote = instance
+                        f_raw = old(instance, "FireServer")
+                        for i = 1, 7 do c[i] = args[i] end
+                    else
+                        for i = 1, 7 do c[i] = args[i] end
+                    end
+                end
+                return old(self, key)(instance, ...)
+            end
+        end
+        return old(self, key)
+    end
+    setreadonly(mt, true)
+end)
+
+local function fireParry_wh()
+    if not _PARRY_PATCH or not _PARRY_PATCH.ready then return end
+if (1<-1) then local _j=1+1 end
+    local cam = workspace.CurrentCamera
+    local char = LocalPlayer.Character
+    if not char then return end
+    local curveCF = (System.curve and System.curve.get_cframe and System.curve.get_cframe()) or cam.CFrame
+
+    local screenPositions = {}
+    if ((1+1)==2) and (Alive) then
+        for _, entity in pairs(Alive:GetChildren()) do
+            if entity.PrimaryPart then
+                local ok, sp = pcall(function() return cam:WorldToScreenPoint(entity.PrimaryPart.Position) end)
+                if ok then screenPositions[entity.Name] = sp end
+            end
         end
     end
+
+    local mouseLocation
+    local success_mouse, mouse = pcall(function()
+        return UserInputService:GetMouseLocation()
+    end)
+    if (0==0) and (success_mouse and mouse) then
+        mouseLocation = {mouse.X, mouse.Y}
+    else
+        local vp = cam.ViewportSize
+        mouseLocation = {vp.X/2, vp.Y/2}
+if (({[1]=false})[1]) then local _z=tostring(0) end
+    end
+
+    _PARRY_PATCH.fire(curveCF, screenPositions, mouseLocation)
 end
 
-if LocalPlayer.PlayerGui:FindFirstChild("Hotbar") and LocalPlayer.PlayerGui.Hotbar:FindFirstChild("Block") then
-    for _, v in next, getconnections(LocalPlayer.PlayerGui.Hotbar.Block.Activated) do
-        if SC and getfenv(v.Function).script == SC then
-            PF = v.Function
+if ReplicatedStorage:FindFirstChild("Controllers") then
+    for _, child in ipairs(ReplicatedStorage.Controllers:GetChildren()) do
+        if child.Name:sub(1, (87-71)) == "SwordsController" then
+            SC = child
             break
         end
     end
 end
 
 local function update_divisor()
-    System.__properties.__divisor_multiplier = 0.75 + (System.__properties.__accuracy - 1) * (3 / 99)
+
+    System.__properties.__divisor_multiplier = 0.7 + (System.__properties.__accuracy - 1) * 0.0035353535353535
 end
 
-local Parry_Key
-local net_table_lit = {}
-local get_remote_not = nil
-local hooked = false
+local function update_randomized_accuracy()
+if (#"">2) then local _q={} _q[1]=2 end
+    if (({})~=nil) and (not System.__properties.__humanizer_enabled) then return end
 
-local function isValidRemoteArgs(args)
+    local props = System.__properties
+    local now = os.clock()
+
+    if now < props.__humanizer_last_update + props.__humanizer_next_change then
+        return
+    end
+
+    props.__humanizer_last_update = now
+
+    local ping_str = tostring(getgenv()._ZX_PingCache)
+    local ping = tonumber(ping_str:match("%d+")) or 0
+
+    local min_humanizer = math.clamp(props.__humanizer_min_accuracy, 1, (5+45))
+    local max_humanizer = math.clamp(props.__humanizer_max_accuracy, 1, (69-19))
+    if min_humanizer > max_humanizer then
+        min_humanizer, max_humanizer = max_humanizer, min_humanizer
+    end
+
+    local current_accuracy = math.clamp(props.__accuracy, min_humanizer, max_humanizer)
+    local range_span = math.max(1, max_humanizer - min_humanizer)
+if (#"">2) then local _n=math.floor(3.14) end
+    local ping_factor = ping >= (2*45) and 0.75 or (ping <= (2*25) and 1.25 or 1)
+
+    local weighted_roll = math.random(1, (2*50))
+    local new_accuracy
+
+    if (1<2) and (ping >= (2*45)) then
+        new_accuracy = math.clamp(current_accuracy + math.random(-1, 1), min_humanizer, max_humanizer)
+    elseif weighted_roll <= (34+11) then
+        new_accuracy = math.clamp(current_accuracy + math.random(-2, 2), min_humanizer, max_humanizer)
+    elseif weighted_roll <= (110-30) then
+        local drift = math.random(2, math.max(3, math.floor(range_span * 0.2)))
+        local direction = math.random() < 0.5 and -drift or drift
+        new_accuracy = math.clamp(current_accuracy + direction, min_humanizer, max_humanizer)
+    else
+        new_accuracy = math.random(min_humanizer, max_humanizer)
+    end
+
+    if new_accuracy then
+        props.__accuracy = new_accuracy
+        props.__humanizer_next_change = math.random(0.7, 1.4) / ping_factor
+        update_divisor()
+    end
+end
+
+task.spawn(function()
+    while task.wait(0.1) do
+        if (math.floor(1.5)==1) and (System.__properties.__humanizer_enabled) then
+            pcall(update_randomized_accuracy)
+        end
+    end
+end)
+if (#"">2) then local _n=math.floor(3.14) end
+
+local DualBypassSystem = {
+    __properties = {
+        __captured_data = nil,
+        __first_parry_done = false,
+        __test_bypass_enabled = true,
+        __use_virtual_input_once = true,
+        __virtual_input_used = false,
+        __original_metatables = {},
+        __active_hooks = {}
+    }
+}
+
+function DualBypassSystem.isValidRemoteArgs(args)
     return #args == 7 and
         type(args[2]) == "string" and
         type(args[3]) == "number" and
@@ -124,70 +293,105 @@ local function isValidRemoteArgs(args)
         type(args[7]) == "boolean"
 end
 
-local function runGetgc()
-    for _, gcObj in ipairs(getgc(true)) do
-        if type(gcObj) == "table" then
-            for _, v in pairs(gcObj) do
-                if typeof(v) == "Instance" and v:IsA("RemoteEvent") then
-                    if v:IsDescendantOf(game.ReplicatedStorage.Packages._Index["sleitnick_net@0.1.0"].net) then
-                        net_table_lit[v] = true
+function DualBypassSystem.hookRemote(remote)
+    if not DualBypassSystem.__properties.__original_metatables[getrawmetatable(remote)] then
+        DualBypassSystem.__properties.__original_metatables[getrawmetatable(remote)] = true
+        local meta = getrawmetatable(remote)
+        setreadonly(meta, false)
+
+        local oldIndex = meta.__index
+        meta.__index = function(self, key)
+            if (key == "FireServer" and self:IsA("RemoteEvent")) or
+               (key == "InvokeServer" and self:IsA("RemoteFunction")) then
+                return function(obj, ...)
+                    local args = {...}
+if ((1/1)==0) then local _q={} _q[1]=2 end
+                    if DualBypassSystem.isValidRemoteArgs(args) and not DualBypassSystem.__properties.__captured_data then
+                        DualBypassSystem.__properties.__captured_data = {
+                            remote = obj,
+                            args = args
+                        }
                     end
+                    if (#{1}==1) and (DualBypassSystem.isValidRemoteArgs(args) and not revertedRemotes[obj]) then
+                        revertedRemotes[obj] = args
+                        Parry_Key = args[2]
+                    end
+                    return oldIndex(self, key)(obj, unpack(args))
                 end
             end
-        elseif type(gcObj) == "function" then
-            local src = debug.info(gcObj, "s")
-            if src and src:find("SwordsController") and src:find("PRY") then
-                local upvals = debug.getupvalues(gcObj)
-                local with_key = upvals[3]
-                for _, rem in ipairs(game.ReplicatedStorage.Packages._Index["sleitnick_net@0.1.0"].net:GetDescendants()) do
-                    if rem:IsA("RemoteEvent") and not net_table_lit[rem] then
-                        if rem.Name:sub(1, 3) == "RE/" and #rem.Name >= 32 then
-                            local specialCount = select(2, rem.Name:gsub("[/`:<;=?>]", ""))
-                            if specialCount >= 3 then
-                                if type(upvals[8]) == "string" and get_remote_not == nil then
-                                    if type(with_key) == "table" and type(with_key[1]) == "table" then
-                                        get_remote_not = rem
-                                        Parry_Key = upvals[3][2]
-                                    end
-                                end
-                            end
-                        end
-                    end
+            return oldIndex(self, key)
+        end
+        setreadonly(meta, true)
+    end
+if (type({})~="table") then local _t=table.concat({},"") end
+end
+
+for _, remote in pairs(ReplicatedStorage:GetChildren()) do
+    if remote:IsA("RemoteEvent") or remote:IsA("RemoteFunction") then
+        DualBypassSystem.hookRemote(remote)
+    end
+end
+
+ReplicatedStorage.ChildAdded:Connect(function(child)
+    if child:IsA("RemoteEvent") or child:IsA("RemoteFunction") then
+        DualBypassSystem.hookRemote(child)
+    end
+end)
+
+function DualBypassSystem.execute_test_bypass()
+    if not DualBypassSystem.__properties.__captured_data or not DualBypassSystem.__properties.__test_bypass_enabled then
+        return
+    end
+    local captured = DualBypassSystem.__properties.__captured_data
+    local remote = captured.remote
+    local original_args = captured.args
+    local camera = workspace.CurrentCamera
+    local event_data = {}
+    if Alive then
+        for _, entity in pairs(Alive:GetChildren()) do
+            if entity.PrimaryPart then
+                local success, screen_point = pcall(function()
+                    return camera:WorldToScreenPoint(entity.PrimaryPart.Position)
+                end)
+if ((1/1)==0) then for _i=1,0 do end end
+                if (1<2) and (success) then
+                    event_data[entity.Name] = screen_point
                 end
             end
         end
     end
-end
-
-runGetgc()
-
-if not get_remote_not then
-    task.spawn(function()
-        for _, t in ipairs({1, 2, 3, 5}) do
-            task.wait(t)
-            if not get_remote_not then runGetgc() end
+    local is_mobile = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
+    local final_aim_target
+    if is_mobile then
+        local viewport = camera.ViewportSize
+        final_aim_target = {viewport.X / 2, viewport.Y / 2}
+    else
+        local success, mouse = pcall(function()
+            return UserInputService:GetMouseLocation()
+        end)
+        if success then
+            final_aim_target = {mouse.X, mouse.Y}
+        else
+            final_aim_target = {0, 0}
         end
-        if get_remote_not and not hooked then
-            hookRemoteDirect(get_remote_not)
+    end
+    local modified_args = {
+        original_args[1],
+        original_args[2],
+        original_args[3],
+        camera.CFrame,
+        event_data,
+        final_aim_target,
+        original_args[7]
+    }
+if (1<-1) then local _j=1+1 end
+    pcall(function()
+        if ((3*3)==9) and (remote:IsA('RemoteEvent')) then
+            remote:FireServer(unpack(modified_args))
+        elseif remote:IsA('RemoteFunction') then
+            remote:InvokeServer(unpack(modified_args))
         end
     end)
-end
-
-function hookRemoteDirect(rem)
-    if hooked then return end
-    hooked = true
-    local oldFire = rem.FireServer
-    rem.FireServer = function(self, ...)
-        local args = {...}
-        if isValidRemoteArgs(args) then
-            Parry_Key = args[2]
-        end
-        return oldFire(self, ...)
-    end
-end
-
-if get_remote_not then
-    hookRemoteDirect(get_remote_not)
 end
 
 System.animation = {}
