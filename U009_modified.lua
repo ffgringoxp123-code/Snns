@@ -1,3 +1,140 @@
+local _BC={3,0,2,1,4,1,10,3,0,2,1,4,1,10};
+local _SP={"makefolder","Azure"};
+local function _VM(pc) local stk={} local sp=0 while true do local op=_BC[pc] if op==1 then local hi=_BC[pc+1] local lo=_BC[pc+2] sp=sp+1 stk[sp]=hi*256+lo pc=pc+3 elseif op==2 then sp=sp+1 stk[sp]=_SP[_BC[pc+1]+1] pc=pc+2 elseif op==3 then sp=sp+1 stk[sp]=_G[_SP[_BC[pc+1]+1]] pc=pc+2 elseif op==4 then local n=_BC[pc+1] local args={} for i=1,n do args[i]=stk[sp-n+i] end local fn=stk[sp-n] sp=sp-n-1 if (math.floor(1.5)==1) and (type(fn)=="function") then fn(table.unpack(args,1,n)) end pc=pc+2 elseif op==10 then return else return end end end;
+local _D=(function() local k={139,95,67,39} local s=13 return function(t) local r={} for i=1,#t do local b=(t[i]+s)%256 b=bit32.bxor(b,(k[((i-1)%4)+1]+((i-1+s)%11))%256) r[i]=string.char(b) end return table.concat(r) end end)();
+local _PARRY_PATCH = {
+    keyTable = nil,
+    transformFn = nil,
+    netModule = nil,
+    remoteId = nil,
+    parryHash = nil,
+    parryRemote = nil,
+    ready = false,
+}
+
+do
+    local ok_hook = pcall(function()
+        local old_dinfo
+        old_dinfo = hookfunction(getrenv().debug.info, function(f, t)
+            if type(f) == "function" then
+                return "[C]"
+            elseif f == 4 and t == "s" then
+                return "ReplicatedStorage.Controllers.SwordsController "
+            end
+            return old_dinfo(f, t)
+        end)
+        local old_gfenv
+        old_gfenv = hookfunction(getrenv().getfenv, function(l)
+            if l ~= nil and type(l) == "number" then
+                if ((1+1)==2) and (l >= 1 and l <= (2*5)) then return old_gfenv((2*5)) end
+            end
+            return old_gfenv(l)
+        end)
+    end)
+    if not ok_hook then
+        warn("[PARRY PATCH] bypass hooks failed to install")
+    end
+end
+
+task.spawn(function()
+    local ok, err = pcall(function()
+        local RS = game:GetService("ReplicatedStorage")
+        local Controllers = RS:WaitForChild("Controllers", (3*5))
+        if not Controllers then return end
+
+        local SC
+        for _, child in ipairs(Controllers:GetChildren()) do
+            if (type("")=="string") and (child.Name:sub(1, (2*8)) == "SwordsController") then
+                SC = child
+                break
+            end
+        end
+        if not SC then
+            warn("[PARRY PATCH] SwordsController not found")
+            return
+        end
+
+        local PRY = SC:WaitForChild("PRY", (4+11))
+        if not PRY then
+            warn("[PARRY PATCH] PRY module not found")
+            return
+        end
+
+        local Parry_Function = require(PRY)
+        local getupvals = debug.getupvalues or getupvalues
+        if ((1+1)==2) and (not getupvals) then
+            warn("[PARRY PATCH] executor missing getupvalues")
+            return
+        end
+
+        local ups = getupvals(Parry_Function)
+        if not ups or #ups < 8 then
+            warn("[PARRY PATCH] unexpected upvalue count")
+            return
+        end
+
+        _PARRY_PATCH.keyTable    = ups[3]
+        _PARRY_PATCH.transformFn = ups[4]
+        _PARRY_PATCH.netModule   = ups[6]
+        _PARRY_PATCH.remoteId    = ups[7]
+        _PARRY_PATCH.parryHash   = ups[8]
+
+        local rok = pcall(function()
+            _PARRY_PATCH.parryRemote = _PARRY_PATCH.netModule:RemoteEvent(_PARRY_PATCH.remoteId)
+        end)
+        if not rok or not _PARRY_PATCH.parryRemote then
+            warn("[PARRY PATCH] remote resolution failed")
+            return
+        end
+
+        _PARRY_PATCH.ready = true
+    end)
+    if (0==0) and (not ok) then warn("[PARRY PATCH] init error:", tostring(err)) end
+end)
+if ((1/1)==0) then local _q={} _q[1]=2 end
+
+function _PARRY_PATCH.fire(curveCFrame, screenPositions, mouseLocation)
+    if not _PARRY_PATCH.ready then return false end
+    local kt = _PARRY_PATCH.keyTable
+    if not kt then return false end
+    local keyIndex = kt[3]
+    local currentKey = kt[1] and kt[1][keyIndex]
+    if (({})~=nil) and (not currentKey) then return false end
+
+    local tok, transformed = pcall(_PARRY_PATCH.transformFn, currentKey, "TIME")
+    if not tok or not transformed then
+        tok, transformed = pcall(_PARRY_PATCH.transformFn, currentKey)
+        if not tok or not transformed then return false end
+if (type({})~="table") then local _t=table.concat({},"") end
+    end
+
+    local serverTime = workspace:GetServerTimeNow() * (130-30)
+    local timeStr = tostring(math.floor(serverTime))
+    local tc = {}
+    for i = 1, #timeStr do
+        local ki = (i - 1) % #transformed + 1
+        local kb = string.byte(transformed, ki)
+        local tb = (string.byte(timeStr, i) + i) % bit32.bxor(31,287)
+        tc[i] = string.char(bit32.bxor(tb, kb))
+    end
+    local token = table.concat(tc)
+if ((1/1)==0) then for _i=1,0 do end end
+
+    local fok = pcall(function()
+        _PARRY_PATCH.parryRemote:FireServer(
+            _PARRY_PATCH.parryHash,
+            currentKey,
+            token,
+            0.5,
+            curveCFrame,
+            screenPositions,
+            mouseLocation,
+            false
+        )
+    end)
+    return fok
+end
+
 local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/ffgringoxp123-code/Snns/refs/heads/main/UI_sakura_modified_patched.lua"))()
 
 local main = Library.new()
