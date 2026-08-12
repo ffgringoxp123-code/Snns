@@ -23,7 +23,7 @@ local SelectedLanguage = GG.Language
 
 -- UI background image (change this value before loading the script)
 -- Example: 109858495328822
-local UI_BACKGROUND_IMAGE = "rbxassetid://109858495328822"
+local UI_BACKGROUND_IMAGE = "rbxassetid://119944812407546"
 
 local UIACProtection = protect_gui or protectgui or (syn and syn.protect_gui) or function() end;
 local UIName = string.char(math.random(60,120))..string.char(math.random(60,120))..string.char(math.random(60,120))..string.char(math.random(60,120))..string.char(math.random(60,120))..string.char(math.random(60,120))..string.char(math.random(60,120))..string.char(math.random(60,120))..string.char(math.random(60,120))..string.char(math.random(60,120))..string.char(math.random(60,120))..string.char(math.random(60,120))..string.char(math.random(60,120))..string.char(math.random(60,120))
